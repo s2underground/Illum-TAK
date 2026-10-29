@@ -8,6 +8,7 @@ import android.preference.Preference;
 
 import com.atakmap.android.illum.plugin.R;
 import com.atakmap.android.preference.PluginPreferenceFragment;
+import com.atakmap.coremap.log.Log;
 
 /**
  * Illum settings, reachable from Settings > Tool Preferences > Specific Tool
@@ -15,6 +16,7 @@ import com.atakmap.android.preference.PluginPreferenceFragment;
  */
 public class IllumPreferenceFragment extends PluginPreferenceFragment {
 
+    private static final String TAG = "IllumPreferences";
     private static Context staticPluginContext;
 
     private static final String[] EDIT_KEYS = {
@@ -41,11 +43,17 @@ public class IllumPreferenceFragment extends PluginPreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        for (String key : EDIT_KEYS)
-            bindSummary(findPreference(key), null);
-        Preference tol = findPreference("illum_tolerance");
-        if (tol != null && staticPluginContext != null)
-            bindSummary(tol, staticPluginContext.getString(R.string.pref_tolerance_summary));
+        // Summaries are cosmetic: never let them take the settings screen down.
+        try {
+            for (String key : EDIT_KEYS)
+                bindSummary(findPreference(key), null);
+            Preference tol = findPreference("illum_tolerance");
+            if (tol != null && staticPluginContext != null)
+                bindSummary(tol,
+                        staticPluginContext.getString(R.string.pref_tolerance_summary));
+        } catch (RuntimeException e) {
+            Log.w(TAG, "could not set preference summaries", e);
+        }
     }
 
     /** Show the current value of an edit-text preference as its summary. */
@@ -63,8 +71,12 @@ public class IllumPreferenceFragment extends PluginPreferenceFragment {
         });
     }
 
-    private static String summary(String format, String value) {
+    /**
+     * Plain concatenation on purpose: preference text may contain literal '%'
+     * characters, which String.format would treat as format codes and throw.
+     */
+    static String summary(String prefix, String value) {
         String v = value == null ? "" : value;
-        return format == null ? v : String.format(format, v);
+        return prefix == null ? v : prefix + " " + v;
     }
 }

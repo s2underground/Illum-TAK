@@ -81,6 +81,8 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     private final LinearLayout banner, planRows;
     private final TableLayout timesTable;
     private final TimelineView timeline;
+    private final MoonPhaseView bannerMoon;
+    private final TextView glossaryToggle, glossary;
     private final Button pickBtn;
 
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
@@ -149,6 +151,22 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         FrameLayout holder = root.findViewById(R.id.timeline_holder);
         holder.addView(timeline, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        bannerMoon = new MoonPhaseView(pluginContext);
+        FrameLayout moonHolder = root.findViewById(R.id.moon_holder);
+        moonHolder.addView(bannerMoon, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        glossaryToggle = root.findViewById(R.id.glossary_toggle);
+        glossary = root.findViewById(R.id.glossary);
+        glossaryToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean show = glossary.getVisibility() != View.VISIBLE;
+                glossary.setVisibility(show ? View.VISIBLE : View.GONE);
+                glossaryToggle.setText(show ? R.string.glossary_hide : R.string.glossary_show);
+            }
+        });
 
         root.findViewById(R.id.btn_self).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -517,6 +535,7 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
                     : Color.WHITE);
         }
 
+        bannerMoon.setPhase(n.illumPercent / 100.0, n.waxing, in.lat < 0);
         renderTimes(n, in);
         timeline.setData(n, z, ps);
         renderNotes(n, in);
@@ -722,6 +741,11 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
                             n.waxing ? "↑" : "↓"),
                     moonSummary(n, in.zone),
                     Double.isNaN(n.hllFraction) ? "--" : Formats.percent(n.hllFraction));
+            MoonPhaseView mini = new MoonPhaseView(plugin);
+            mini.setPhase(n.illumPercent / 100.0, n.waxing, in.lat < 0);
+            ((FrameLayout) row.findViewById(R.id.row_moon_holder)).addView(mini,
+                    new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT));
             if (r.selected != null && n.epochDay == r.selected.epochDay)
                 row.setBackgroundColor(0x33FFFFFF);
             row.setOnClickListener(new View.OnClickListener() {

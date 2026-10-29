@@ -41,7 +41,7 @@
     <string name="pref_window_start">Custom start (HHMM)</string>
     <string name="pref_window_end">Custom end (HHMM)</string>
     <string name="pref_tolerance">Mixed-night tolerance (%)</string>
-    <string name="pref_tolerance_summary">A night is solid HLL when at least (100 − this)% of the window is HLL, solid LLL when at most this % is HLL, otherwise MIXED. Current: %s</string>
+    <string name="pref_tolerance_summary">A night is solid HLL (High Light Level) when at least (100 minus this) percent of the window is HLL, and solid LLL (Low Light Level) when at most this percent is HLL. Anything in between is MIXED. Current:</string>
     <string name="pref_cat_conditions">Conditions</string>
     <string name="pref_sky">Sky condition</string>
     <string name="pref_night_sky">Include starlight / airglow</string>
@@ -52,4 +52,7 @@
     <string name="pref_show_zulu">Also show Zulu times</string>
     <string name="pref_all_twilight">Show civil and astronomical twilight</string>
     <string name="pref_plan_nights">Planning nights</string>
+    <string name="glossary_show">\u25B8 Abbreviations and terms</string>
+    <string name="glossary_hide">\u25BE Abbreviations and terms</string>
+    <string name="glossary">SS / SR: Sunset / Sunrise (upper edge of the sun on the horizon).\nEECT / BMCT: End of Evening / Beginning of Morning Civil Twilight. Sun 6\u00b0 below the horizon.\nEENT / BMNT: End of Evening / Beginning of Morning Nautical Twilight. Sun 12\u00b0 below the horizon. The default rated window runs from EENT to BMNT.\nEEAT / BMAT: End of Evening / Beginning of Morning Astronomical Twilight. Sun 18\u00b0 below the horizon (full darkness).\nMR / MS: Moonrise / Moonset. \u201c@ 071\u00b0\u201d is the true azimuth where it rises or sets.\nIllum: percentage of the moon\u2019s disk that is lit. \u2191 waxing (growing), \u2193 waning (shrinking).\nMoon max: highest the moon gets above the horizon inside the window.\nMoonlight: brightest moonlight inside the window.\nHLL / LLL: High / Low Light Level, at or above / below the selected standard\u2019s threshold.\nMIXED: part of the window is HLL and part is LLL. The notes list the HLL periods.\nlux / mlux: units of illuminance. 1 mlux (millilux) = 0.001 lux. Full moon high in the sky: about 0.25 lux. HLL threshold: 2.2 mlux.\nNVG: Night Vision Goggles. Degain: the NVG dims its gain when bright light (such as a low moon) is in view.\nL / Z / letter after a time: device Local time / Zulu (UTC) / nautical (military) time zone letter for the AO, e.g. R = UTC\u22125.\nAO: Area of Operations.\nAFI: Air Force Instruction. MCO: Marine Corps Order. SOP: Standing Operating Procedure.\nSLAP: the official military solar/lunar almanac data used in NVG briefs.\nUSNO: U.S. Naval Observatory, source of the illuminance model.\nTimeline: shading = sky (day, civil, nautical, astronomical, night). Yellow top strip = moon up. White line = estimated light (log scale). Dashed line = HLL threshold. Bottom strip = stoplight color. Cyan lines = rated window.</string>
 </resources>
