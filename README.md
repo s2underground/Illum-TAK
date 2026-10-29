@@ -26,7 +26,8 @@ Illum Preferences, or the Settings button in the pane.
 _________________________________________________________________
 STATUS
 
-1.0 (Oct 2026). Submitted to the TAK.gov Third Party Pipeline for signing.
+1.0 released Oct 29, 2026. Signed by the TAK.gov Third Party Pipeline
+(built against ATAK-CIV 5.6.0.26; Fortify scan: 0 issues).
 
 _________________________________________________________________
 POINT OF CONTACTS
