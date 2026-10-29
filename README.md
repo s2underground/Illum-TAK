@@ -26,7 +26,7 @@ Illum Preferences, or the Settings button in the pane.
 _________________________________________________________________
 STATUS
 
-1.0 in development (Oct 2026).
+1.0 (Oct 2026). Submitted to the TAK.gov Third Party Pipeline for signing.
 
 _________________________________________________________________
 POINT OF CONTACTS
@@ -55,9 +55,13 @@ Standard ATAK plugin build. `./gradlew assembleCivRelease` for release.
 For the 5.5.1 developer build of ATAK, build with
 `./gradlew assembleCivDebug -PatakVersion=5.5.0`.
 
-Unit tests (`./gradlew testCivDebugUnitTest`) check rise, set and twilight
-times against an independent ephemeris (PyEphem) at 8 sites from the
-equator to 70N, including midnight sun and polar night.
+Unit tests (`./gradlew testCivDebugUnitTest`) check sunset, EENT, BMNT,
+sunrise, moonrise, moonset and moon illumination against NASA JPL's DE421
+ephemeris (via Skyfield) for 300 nights at 10 sites from 55S to 70N
+(2026-2036), and against PyEphem for 64 more nights, including midnight sun
+and polar night. Typical agreement is a few seconds; the worst cases (about
+a minute) are high-latitude nights when the sun barely dips below 12 deg.
+The scripts that generate the reference tables are in tools/reference/.
 
 _________________________________________________________________
 DEVELOPER NOTES
@@ -67,5 +71,15 @@ DEVELOPER NOTES
   stoplight), LightStandard, PlanSettings, DisplayZone, IllumPrefs.
 - ui/ holds the pane (IllumPane), the TimelineView graphic and the Tool
   Preferences fragment.
-- Accuracy: sun/moon events within about 15 seconds of the reference. The
-  illuminance is a clear-sky estimate scaled by the Sky setting.
+- Accuracy: see COMPILATION above. The illuminance is a clear-sky estimate
+  scaled by the Sky setting.
+
+_________________________________________________________________
+ACKNOWLEDGMENTS
+
+- Sun and moon position algorithms: Jean Meeus, "Astronomical Algorithms",
+  2nd ed. (Willmann-Bell, 1998), chapters 12, 22, 25, 47 and 48.
+- Illuminance model: P. M. Janiczek and J. A. DeYoung, "Computer Programs
+  for Sun and Moon Illuminance", U.S. Naval Observatory Circular 171 (1987),
+  public domain.
+- No third-party code or libraries are bundled in the plugin.

@@ -338,7 +338,7 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         d.addMapEventListener(MapEvent.ITEM_CLICK, pickListener);
         d.addMapEventListener(MapEvent.MAP_LONG_PRESS, pickListener);
         picking = true;
-        pickBtn.setText("Cancel");
+        pickBtn.setText(R.string.cancel);
         TextContainer.getInstance().displayPrompt(plugin.getString(R.string.pick_prompt));
     }
 
@@ -442,7 +442,7 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         in.selectedDay = selectedDay;
 
         showLocation(in);
-        dateLabel.setText("Night of " + CivilDate.label(in.selectedDay));
+        dateLabel.setText(plugin.getString(R.string.night_of, CivilDate.label(in.selectedDay)));
         bannerSub.setText(R.string.computing);
 
         final int gen = ++generation;
@@ -514,8 +514,8 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         PlanSettings ps = in.settings;
         DisplayZone z = in.zone;
 
-        dateLabel.setText("Night of " + CivilDate.label(n.epochDay)
-                + (n.epochDay == in.firstDay ? " (tonight)" : ""));
+        dateLabel.setText(plugin.getString(n.epochDay == in.firstDay ? R.string.night_of_tonight
+                : R.string.night_of, CivilDate.label(n.epochDay)));
 
         // banner
         String mission = ps.mission == PlanSettings.Mission.NVG ? "NVG ops" : "Concealment";

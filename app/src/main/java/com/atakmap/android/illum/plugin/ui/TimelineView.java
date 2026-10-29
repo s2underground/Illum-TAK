@@ -14,8 +14,6 @@ import com.atakmap.android.illum.plugin.core.LightStandard;
 import com.atakmap.android.illum.plugin.core.NightReport;
 import com.atakmap.android.illum.plugin.core.PlanSettings;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * One night as a horizontal strip:
@@ -43,6 +41,9 @@ public class TimelineView extends View {
     private final Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
     private final float dp;
+    private final long[] eventTimes = new long[16];
+    private final String[] eventNames = new String[16];
+    private int eventCount;
 
     public TimelineView(Context context) {
         super(context);
@@ -64,7 +65,35 @@ public class TimelineView extends View {
         night = n;
         zone = z;
         settings = s;
+        // collect and time-sort event labels once, so onDraw allocates nothing
+        eventCount = 0;
+        if (n != null) {
+            addEvent(n.sunset, "SS");
+            addEvent(n.eent, "EENT");
+            addEvent(n.bmnt, "BMNT");
+            addEvent(n.sunrise, "SR");
+            for (NightReport.MoonEvent m : n.moonEvents)
+                addEvent(m.time, m.rise ? "MR" : "MS");
+            for (int i = 1; i < eventCount; i++) {
+                for (int j = i; j > 0 && eventTimes[j] < eventTimes[j - 1]; j--) {
+                    long tt = eventTimes[j];
+                    eventTimes[j] = eventTimes[j - 1];
+                    eventTimes[j - 1] = tt;
+                    String nn = eventNames[j];
+                    eventNames[j] = eventNames[j - 1];
+                    eventNames[j - 1] = nn;
+                }
+            }
+        }
         invalidate();
+    }
+
+    private void addEvent(long t, String name) {
+        if (t == NightReport.NONE || eventCount >= eventTimes.length)
+            return;
+        eventTimes[eventCount] = t;
+        eventNames[eventCount] = name;
+        eventCount++;
     }
 
     @Override
@@ -157,35 +186,19 @@ public class TimelineView extends View {
                 c.drawLine(we, labelH, we, chartBot + hllH, stroke);
         }
 
-        // event labels along the top
-        List<long[]> ev = new ArrayList<>();
-        List<String> names = new ArrayList<>();
-        addEvent(ev, names, n.sunset, "SS");
-        addEvent(ev, names, n.eent, "EENT");
-        addEvent(ev, names, n.bmnt, "BMNT");
-        addEvent(ev, names, n.sunrise, "SR");
-        for (NightReport.MoonEvent m : n.moonEvents)
-            addEvent(ev, names, m.time, m.rise ? "MR" : "MS");
+        // event labels along the top (sorted in setData)
         text.setTextAlign(Paint.Align.CENTER);
         text.setColor(Color.WHITE);
         float lastX = -1000;
-        // draw in time order to space labels
-        for (int pass = 0; pass < ev.size(); pass++) {
-            int best = -1;
-            for (int i = 0; i < ev.size(); i++)
-                if (ev.get(i)[1] == 0 && (best < 0 || ev.get(i)[0] < ev.get(best)[0]))
-                    best = i;
-            if (best < 0)
-                break;
-            ev.get(best)[1] = 1;
-            long t = ev.get(best)[0];
+        for (int i = 0; i < eventCount; i++) {
+            long t = eventTimes[i];
             if (t < t0 || t > t1)
                 continue;
             float px = x(t, t0, t1, w);
             c.drawLine(px, labelH - 2 * dp, px, labelH + moonH, text);
             if (px - lastX > 30 * dp) {
                 float tx = Math.max(14 * dp, Math.min(w - 14 * dp, px));
-                c.drawText(names.get(best), tx, labelH - 3 * dp, text);
+                c.drawText(eventNames[i], tx, labelH - 3 * dp, text);
                 lastX = px;
             }
         }
@@ -206,14 +219,6 @@ public class TimelineView extends View {
         }
     }
 
-    private static void addEvent(List<long[]> ev, List<String> names, long t, String name) {
-        if (t == NightReport.NONE)
-            return;
-        ev.add(new long[] {
-                t, 0
-        });
-        names.add(name);
-    }
 
     private static float x(long t, long t0, long t1, int w) {
         return (float) ((t - t0) / (double) (t1 - t0) * w);

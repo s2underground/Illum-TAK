@@ -12,6 +12,9 @@
     <string name="prev">◀</string>
     <string name="next">▶</string>
     <string name="settings">Settings</string>
+    <string name="cancel">Cancel</string>
+    <string name="night_of">Night of %1$s</string>
+    <string name="night_of_tonight">Night of %1$s (tonight)</string>
     <string name="computing">Computing…</string>
     <string name="pick_prompt">Tap the map or a marker to get illumination data there. Press Pick again to cancel.</string>
     <string name="no_self">No GPS position yet. Using the map center.</string>

@@ -64,7 +64,7 @@ Open them from the pane's *Settings* button, or from Settings › Tool Preferenc
 - Number of planning nights: 7 to 90.
 
 = Accuracy and limits
-Sun and moon positions follow Meeus, _Astronomical Algorithms_. Against an independent ephemeris, rise, set and twilight times agree within about 15 seconds at 8 test sites from the equator to 70°N. Illuminance uses the USNO Circular 171 model for a *clear sky*. Clouds, terrain masking, smoke, snow cover and city lights change real light levels. Illum supports planning and does not replace official SLAP (military solar/lunar almanac) data or weather products.
+Sun and moon positions follow Meeus, _Astronomical Algorithms_. Against NASA JPL's DE421 ephemeris (300 test nights at 10 sites from 55°S to 70°N), rise, set and twilight times typically agree within a few seconds, and moon illumination within 0.1 percentage point. The worst case is about a minute, on high-latitude nights when the sun barely dips below 12°. Illuminance uses the USNO Circular 171 model for a *clear sky*. Clouds, terrain masking, smoke, snow cover and city lights change real light levels. Illum supports planning and does not replace official SLAP (military solar/lunar almanac) data or weather products.
 ]
 
 #tak-slide[

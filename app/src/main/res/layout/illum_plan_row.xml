@@ -24,7 +24,7 @@
         android:layout_width="0dp"
         android:layout_height="24dp"
         android:layout_weight="0.15"
-        android:layout_marginRight="4dp"
+        android:layout_marginEnd="4dp"
         android:gravity="center"
         android:textColor="#FFFFFF"
         android:textSize="11sp"
@@ -43,7 +43,7 @@
             android:id="@+id/row_moon_holder"
             android:layout_width="16dp"
             android:layout_height="16dp"
-            android:layout_marginRight="3dp" />
+            android:layout_marginEnd="3dp" />
 
         <TextView
             android:id="@+id/row_illum"
