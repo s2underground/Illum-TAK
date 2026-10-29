@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Illum</string>
+    <string name="app_desc">Night light data for any location: BMNT/EENT, sunrise/sunset, moonrise/moonset, moon illumination and an HLL/LLL stoplight for up to 90 nights. Computed on the device; works fully offline.</string>
+
+    <!-- Pane -->
+    <string name="loc_self">My Pos</string>
+    <string name="loc_center">Map Ctr</string>
+    <string name="loc_pick">Pick</string>
+    <string name="today">Tonight</string>
+    <string name="prev">◀</string>
+    <string name="next">▶</string>
+    <string name="settings">Settings</string>
+    <string name="computing">Computing…</string>
+    <string name="pick_prompt">Tap the map or a marker to get illumination data there. Press Pick again to cancel.</string>
+    <string name="no_self">No GPS position yet. Using the map center.</string>
+    <string name="plan_header">%1$d-NIGHT PLAN</string>
+    <string name="col_date">Night</string>
+    <string name="col_rating">Light</string>
+    <string name="col_illum">Illum</string>
+    <string name="col_moon">Rise / Set</string>
+    <string name="col_hll">HLL</string>
+    <string name="disclaimer">Clear-sky estimates from the USNO Circular 171 illuminance model (adjusted by the Sky setting). Cloud, terrain, smoke and cultural lighting change real light levels. Not a substitute for official SLAP or weather products.</string>
+
+    <!-- Tool preferences -->
+    <string name="pref_title">Illum Preferences</string>
+    <string name="pref_summary">Light standard, mission type, rated window, time zone</string>
+    <string name="pref_cat_standard">Light standard</string>
+    <string name="pref_standard">Service standard</string>
+    <string name="pref_mission">Mission type</string>
+    <string name="pref_about">About the standards</string>
+    <string name="pref_about_summary">USAF (AFI 11-214): high illumination is at least 2.2 millilux, about a 20% moon at 30° or higher.\nUSN/USMC (MCO 3500.14): HLL is 0.0022 lux or above (the same threshold); planning tools ignore low moon angle, terrain and shadows.\nArmy: at least 23% illumination with the moon at least 30° up (rule of thumb; verify against your SOP).\nCustom: your own numbers below.</string>
+    <string name="pref_cat_custom">Custom standard (when Service standard is Custom)</string>
+    <string name="pref_custom_method">Custom method</string>
+    <string name="pref_custom_mlux">HLL threshold (millilux)</string>
+    <string name="pref_custom_illum">Minimum moon illumination (%)</string>
+    <string name="pref_custom_alt">Minimum moon elevation (°)</string>
+    <string name="pref_cat_window">Rated window</string>
+    <string name="pref_window">Window</string>
+    <string name="pref_window_start">Custom start (HHMM)</string>
+    <string name="pref_window_end">Custom end (HHMM)</string>
+    <string name="pref_tolerance">Mixed-night tolerance (%)</string>
+    <string name="pref_tolerance_summary">A night is solid HLL when at least (100 − this)% of the window is HLL, solid LLL when at most this % is HLL, otherwise MIXED. Current: %s</string>
+    <string name="pref_cat_conditions">Conditions</string>
+    <string name="pref_sky">Sky condition</string>
+    <string name="pref_night_sky">Include starlight / airglow</string>
+    <string name="pref_night_sky_summary">Adds the USNO 0.5 millilux night-sky term. Off is more conservative for NVG planning.</string>
+    <string name="pref_cat_display">Display</string>
+    <string name="pref_time_zone">Time zone</string>
+    <string name="pref_manual_offset">Manual UTC offset (hours)</string>
+    <string name="pref_show_zulu">Also show Zulu times</string>
+    <string name="pref_all_twilight">Show civil and astronomical twilight</string>
+    <string name="pref_plan_nights">Planning nights</string>
+</resources>

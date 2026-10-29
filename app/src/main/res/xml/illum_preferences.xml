@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/pref_cat_standard">
+        <ListPreference
+            android:key="illum_standard"
+            android:title="@string/pref_standard"
+            android:entries="@array/standard_entries"
+            android:entryValues="@array/standard_values"
+            android:defaultValue="usaf"
+            android:summary="%s" />
+        <ListPreference
+            android:key="illum_mission"
+            android:title="@string/pref_mission"
+            android:entries="@array/mission_entries"
+            android:entryValues="@array/mission_values"
+            android:defaultValue="nvg"
+            android:summary="%s" />
+        <Preference
+            android:key="illum_about"
+            android:title="@string/pref_about"
+            android:summary="@string/pref_about_summary"
+            android:selectable="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_custom">
+        <ListPreference
+            android:key="illum_custom_method"
+            android:title="@string/pref_custom_method"
+            android:entries="@array/method_entries"
+            android:entryValues="@array/method_values"
+            android:defaultValue="lux"
+            android:summary="%s" />
+        <EditTextPreference
+            android:key="illum_custom_mlux"
+            android:title="@string/pref_custom_mlux"
+            android:defaultValue="2.2"
+            android:inputType="numberDecimal" />
+        <EditTextPreference
+            android:key="illum_custom_min_illum"
+            android:title="@string/pref_custom_illum"
+            android:defaultValue="20"
+            android:inputType="number" />
+        <EditTextPreference
+            android:key="illum_custom_min_alt"
+            android:title="@string/pref_custom_alt"
+            android:defaultValue="30"
+            android:inputType="number" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_window">
+        <ListPreference
+            android:key="illum_window"
+            android:title="@string/pref_window"
+            android:entries="@array/window_entries"
+            android:entryValues="@array/window_values"
+            android:defaultValue="nautical"
+            android:summary="%s" />
+        <EditTextPreference
+            android:key="illum_window_start"
+            android:title="@string/pref_window_start"
+            android:defaultValue="2200"
+            android:inputType="number"
+            android:maxLength="4" />
+        <EditTextPreference
+            android:key="illum_window_end"
+            android:title="@string/pref_window_end"
+            android:defaultValue="0400"
+            android:inputType="number"
+            android:maxLength="4" />
+        <EditTextPreference
+            android:key="illum_tolerance"
+            android:title="@string/pref_tolerance"
+            android:defaultValue="10"
+            android:inputType="number" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_conditions">
+        <ListPreference
+            android:key="illum_sky"
+            android:title="@string/pref_sky"
+            android:entries="@array/sky_entries"
+            android:entryValues="@array/sky_values"
+            android:defaultValue="clear"
+            android:summary="%s" />
+        <CheckBoxPreference
+            android:key="illum_night_sky"
+            android:title="@string/pref_night_sky"
+            android:summary="@string/pref_night_sky_summary"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_display">
+        <ListPreference
+            android:key="illum_time_zone"
+            android:title="@string/pref_time_zone"
+            android:entries="@array/zone_entries"
+            android:entryValues="@array/zone_values"
+            android:defaultValue="device"
+            android:summary="%s" />
+        <EditTextPreference
+            android:key="illum_manual_offset"
+            android:title="@string/pref_manual_offset"
+            android:defaultValue="0"
+            android:inputType="numberSigned|numberDecimal" />
+        <CheckBoxPreference
+            android:key="illum_show_zulu"
+            android:title="@string/pref_show_zulu"
+            android:defaultValue="true" />
+        <CheckBoxPreference
+            android:key="illum_all_twilight"
+            android:title="@string/pref_all_twilight"
+            android:defaultValue="false" />
+        <ListPreference
+            android:key="illum_plan_nights"
+            android:title="@string/pref_plan_nights"
+            android:entries="@array/nights_entries"
+            android:entryValues="@array/nights_values"
+            android:defaultValue="30"
+            android:summary="%s" />
+    </PreferenceCategory>
+</PreferenceScreen>

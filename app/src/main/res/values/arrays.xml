@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="standard_entries">
+        <item>USAF (2.2 millilux)</item>
+        <item>USN / USMC (0.0022 lux)</item>
+        <item>Army (23% moon, 30° up)</item>
+        <item>Custom</item>
+    </string-array>
+    <string-array name="standard_values" translatable="false">
+        <item>usaf</item>
+        <item>usn</item>
+        <item>army</item>
+        <item>custom</item>
+    </string-array>
+
+    <string-array name="mission_entries">
+        <item>NVG / aviation (light is good)</item>
+        <item>Ground concealment (dark is good)</item>
+    </string-array>
+    <string-array name="mission_values" translatable="false">
+        <item>nvg</item>
+        <item>conceal</item>
+    </string-array>
+
+    <string-array name="method_entries">
+        <item>Lux threshold</item>
+        <item>Moon illumination and elevation</item>
+    </string-array>
+    <string-array name="method_values" translatable="false">
+        <item>lux</item>
+        <item>moon</item>
+    </string-array>
+
+    <string-array name="window_entries">
+        <item>EENT to BMNT (nautical darkness)</item>
+        <item>Sunset to sunrise</item>
+        <item>Custom times</item>
+    </string-array>
+    <string-array name="window_values" translatable="false">
+        <item>nautical</item>
+        <item>sun</item>
+        <item>custom</item>
+    </string-array>
+
+    <string-array name="sky_entries">
+        <item>Clear</item>
+        <item>Thin clouds (÷2)</item>
+        <item>Average clouds (÷3)</item>
+        <item>Dark stratus (÷10)</item>
+    </string-array>
+    <string-array name="sky_values" translatable="false">
+        <item>clear</item>
+        <item>thin</item>
+        <item>average</item>
+        <item>stratus</item>
+    </string-array>
+
+    <string-array name="zone_entries">
+        <item>Device local time</item>
+        <item>Zulu (UTC)</item>
+        <item>AO nautical zone (by longitude)</item>
+        <item>Manual UTC offset</item>
+    </string-array>
+    <string-array name="zone_values" translatable="false">
+        <item>device</item>
+        <item>zulu</item>
+        <item>ao</item>
+        <item>manual</item>
+    </string-array>
+
+    <string-array name="nights_entries">
+        <item>7 nights</item>
+        <item>14 nights</item>
+        <item>30 nights</item>
+        <item>45 nights</item>
+        <item>60 nights</item>
+        <item>90 nights</item>
+    </string-array>
+    <string-array name="nights_values" translatable="false">
+        <item>7</item>
+        <item>14</item>
+        <item>30</item>
+        <item>45</item>
+        <item>60</item>
+        <item>90</item>
+    </string-array>
+</resources>

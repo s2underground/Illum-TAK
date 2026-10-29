@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:minHeight="34dp"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <TextView
+        android:id="@+id/row_date"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.27"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        tools:text="Thu 29 OCT" />
+
+    <TextView
+        android:id="@+id/row_chip"
+        android:layout_width="0dp"
+        android:layout_height="24dp"
+        android:layout_weight="0.15"
+        android:layout_marginRight="4dp"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        tools:text="HLL" />
+
+    <TextView
+        android:id="@+id/row_illum"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.15"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        tools:text="87%↓" />
+
+    <TextView
+        android:id="@+id/row_moon"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.30"
+        android:textColor="#DDDDDD"
+        android:textSize="12sp"
+        tools:text="1932 / 0811" />
+
+    <TextView
+        android:id="@+id/row_hll"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.13"
+        android:gravity="end"
+        android:textColor="#DDDDDD"
+        android:textSize="12sp"
+        tools:text="100%" />
+</LinearLayout>

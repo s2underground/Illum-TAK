@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/illum_scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fadeScrollbars="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="6dp"
+        android:paddingRight="6dp"
+        android:paddingBottom="12dp">
+
+        <!-- Location -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="4dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/loc_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="My Position" />
+
+                <TextView
+                    android:id="@+id/loc_coord"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#BBBBBB"
+                    android:textSize="12sp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="18S UJ 23480 06470" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_settings"
+                style="@style/darkButton"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:minWidth="0dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:text="@string/settings"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="4dp">
+
+            <Button
+                android:id="@+id/btn_self"
+                style="@style/darkButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:layout_marginRight="3dp"
+                android:text="@string/loc_self"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btn_center"
+                style="@style/darkButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:layout_marginRight="3dp"
+                android:text="@string/loc_center"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btn_pick"
+                style="@style/darkButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="@string/loc_pick"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Date navigation -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="6dp">
+
+            <Button
+                android:id="@+id/btn_prev"
+                style="@style/darkButton"
+                android:layout_width="44dp"
+                android:layout_height="36dp"
+                android:minWidth="0dp"
+                android:text="@string/prev" />
+
+            <TextView
+                android:id="@+id/date_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="Night of Thu 29 OCT 26" />
+
+            <Button
+                android:id="@+id/btn_next"
+                style="@style/darkButton"
+                android:layout_width="44dp"
+                android:layout_height="36dp"
+                android:minWidth="0dp"
+                android:text="@string/next" />
+
+            <Button
+                android:id="@+id/btn_today"
+                style="@style/darkButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginLeft="3dp"
+                android:minWidth="0dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:text="@string/today"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Stoplight banner -->
+        <LinearLayout
+            android:id="@+id/banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="#616161">
+
+            <TextView
+                android:id="@+id/banner_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                tools:text="GREEN · HLL" />
+
+            <TextView
+                android:id="@+id/banner_sub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                tools:text="100% of EENT–BMNT is HLL · USAF · NVG ops" />
+        </LinearLayout>
+
+        <!-- Times table (filled in code) -->
+        <TableLayout
+            android:id="@+id/times_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:stretchColumns="1,3"
+            android:shrinkColumns="1,3" />
+
+        <!-- TimelineView is added in code (avoids plugin class loading in XML) -->
+        <FrameLayout
+            android:id="@+id/timeline_holder"
+            android:layout_width="match_parent"
+            android:layout_height="128dp"
+            android:layout_marginTop="6dp" />
+
+        <TextView
+            android:id="@+id/notes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="#FFD54F"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <!-- Plan -->
+        <TextView
+            android:id="@+id/plan_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="30-NIGHT PLAN · Local (UTC−4)" />
+
+        <LinearLayout
+            android:id="@+id/plan_rows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="2dp" />
+
+        <TextView
+            android:id="@+id/standard_ref"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/disclaimer"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp" />
+    </LinearLayout>
+</ScrollView>
