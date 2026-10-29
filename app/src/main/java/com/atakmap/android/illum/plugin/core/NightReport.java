@@ -34,6 +34,19 @@ public final class NightReport {
         }
     }
 
+    /** A stretch of the window that is HLL. */
+    public static final class HllPeriod {
+        public final long start, end;
+        /** Bright only because of twilight (the moon alone would not make it HLL). */
+        public final boolean twilightOnly;
+
+        public HllPeriod(long start, long end, boolean twilightOnly) {
+            this.start = start;
+            this.end = end;
+            this.twilightOnly = twilightOnly;
+        }
+    }
+
     // where / when
     public double latDeg, lonDeg;
     public long epochDay;
@@ -68,11 +81,16 @@ public final class NightReport {
     public double lowMoonFraction = Double.NaN;
     public double peakLux = Double.NaN, minLux = Double.NaN;
     public long peakLuxTime = NONE;
+    /** Brightest moonlight alone within the window (sky factor applied). */
+    public double peakMoonLux = Double.NaN;
+    public long peakMoonLuxTime = NONE;
     /** Moon's highest altitude within the window. */
     public double moonMaxAltDeg = Double.NaN;
     public long moonMaxAltTime = NONE;
     /** First HLL / last HLL instant inside the window (NONE if never HLL). */
     public long firstHll = NONE, lastHll = NONE;
+    /** HLL stretches inside the window, in time order. */
+    public List<HllPeriod> hllPeriods = Collections.emptyList();
     public LightLevel level = LightLevel.NONE;
     public Rating rating = Rating.NONE;
 

@@ -77,6 +77,28 @@ public class NightCalculatorTest {
     }
 
     @Test
+    public void lateMoonriseNightShowsTwilightThenMoonPeriods() {
+        // 29 Oct 2026, DC: 79% waning gibbous rising ~2050L, EENT ~1910L
+        NightReport n = NightCalculator.compute(DC_LAT, DC_LON,
+                CivilDate.fromCivil(2026, 10, 29),
+                DisplayZone.of(TimeZone.getTimeZone("America/New_York")),
+                PlanSettings.defaults());
+        assertTrue(n.illumPercent > 70);
+        assertEquals(NightReport.LightLevel.MIXED, n.level);
+        assertEquals(NightReport.Rating.AMBER, n.rating);
+        assertTrue(n.hllPeriods.size() >= 2);
+        NightReport.HllPeriod twilight = n.hllPeriods.get(0);
+        NightReport.HllPeriod moon = n.hllPeriods.get(n.hllPeriods.size() - 1);
+        assertTrue(twilight.twilightOnly);
+        assertEquals(n.windowStart, twilight.start);
+        assertTrue((twilight.end - twilight.start) < 30 * 60000L);
+        assertFalse(moon.twilightOnly);
+        assertTrue(moon.start > n.moonEvents.get(0).time);
+        // moonlight peak is real moonlight, not twilight
+        assertTrue(n.peakMoonLuxTime > moon.start);
+    }
+
+    @Test
     public void heavyCloudTurnsFullMoonIntoLowLight() {
         DisplayZone z = DisplayZone.nautical(DC_LON);
         PlanSettings stratus = PlanSettings.defaults().toBuilder()

@@ -263,11 +263,17 @@ public final class NightCalculator {
 
         long step = r.sampleStep;
         int total = 0, hll = 0, lowMoon = 0;
-        double peak = -1, min = Double.MAX_VALUE, maxAlt = -91;
+        double peak = -1, peakMoon = -1, min = Double.MAX_VALUE, maxAlt = -91;
+        List<NightReport.HllPeriod> periods = new ArrayList<>();
+        long segStart = NightReport.NONE;
+        boolean segMoon = false;
         for (long t = r.windowStart; t < r.windowEnd; t += step) {
             SkyState s = Ephemeris.compute(t, lat, lon);
             Lux l = lux(s, ps);
             boolean isHll = ps.standard.isHighLight(l.total, l.sun, s.moonAltDeg,
+                    s.illumPercent());
+            // would it be HLL from the moon (and sky) alone, without twilight?
+            boolean moonHll = ps.standard.isHighLight(l.total - l.sun, 0, s.moonAltDeg,
                     s.illumPercent());
             total++;
             if (isHll) {
@@ -275,6 +281,14 @@ public final class NightCalculator {
                 if (r.firstHll == NightReport.NONE)
                     r.firstHll = t;
                 r.lastHll = t;
+                if (segStart == NightReport.NONE) {
+                    segStart = t;
+                    segMoon = false;
+                }
+                segMoon |= moonHll;
+            } else if (segStart != NightReport.NONE) {
+                periods.add(new NightReport.HllPeriod(segStart, t, !segMoon));
+                segStart = NightReport.NONE;
             }
             if (s.moonAltDeg > 0 && s.moonAltDeg < ps.standard.minMoonAltDeg)
                 lowMoon++;
@@ -282,12 +296,19 @@ public final class NightCalculator {
                 peak = l.total;
                 r.peakLuxTime = t;
             }
+            if (l.moon > peakMoon) {
+                peakMoon = l.moon;
+                r.peakMoonLuxTime = t;
+            }
             min = Math.min(min, l.total);
             if (s.moonAltDeg > maxAlt) {
                 maxAlt = s.moonAltDeg;
                 r.moonMaxAltTime = t;
             }
         }
+        if (segStart != NightReport.NONE)
+            periods.add(new NightReport.HllPeriod(segStart, r.windowEnd, !segMoon));
+        r.hllPeriods = periods;
         if (total == 0) {
             r.level = NightReport.LightLevel.NONE;
             r.rating = NightReport.Rating.NONE;
@@ -296,6 +317,7 @@ public final class NightCalculator {
         r.hllFraction = hll / (double) total;
         r.lowMoonFraction = lowMoon / (double) total;
         r.peakLux = peak;
+        r.peakMoonLux = peakMoon;
         r.minLux = min;
         r.moonMaxAltDeg = maxAlt;
 

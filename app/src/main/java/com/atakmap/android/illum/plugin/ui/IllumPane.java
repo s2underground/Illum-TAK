@@ -578,10 +578,11 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
                 Double.isNaN(n.moonMaxAltDeg) ? new SpannableStringBuilder("--")
                         : new SpannableStringBuilder(Formats.altitude(n.moonMaxAltDeg))
                                 .append(small("\n@ " + Formats.time(n.moonMaxAltTime, z))));
-        addRow("Peak light",
-                Double.isNaN(n.peakLux) ? new SpannableStringBuilder("--")
-                        : new SpannableStringBuilder(Formats.lux(n.peakLux))
-                                .append(small("\n@ " + Formats.time(n.peakLuxTime, z))),
+        addRow("Moonlight",
+                Double.isNaN(n.peakMoonLux) || n.peakMoonLux <= 0
+                        ? new SpannableStringBuilder("none")
+                        : new SpannableStringBuilder(Formats.lux(n.peakMoonLux))
+                                .append(small("\npeak @ " + Formats.time(n.peakMoonLuxTime, z))),
                 "Window",
                 n.hasWindow() ? new SpannableStringBuilder(Formats.time(n.windowStart, z)
                         + "–" + Formats.time(n.windowEnd, z))
@@ -665,9 +666,19 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
             sb.append("• The sun never gets 12° below the horizon tonight: no EENT/BMNT.\n");
         else if (n.allNauticalDark)
             sb.append("• Polar night: nautical darkness all day.\n");
-        if (n.level == NightReport.LightLevel.MIXED && n.firstHll != NightReport.NONE)
-            sb.append("• HLL from ").append(Formats.time(n.firstHll, z)).append(" to ")
-                    .append(Formats.time(n.lastHll + n.sampleStep, z)).append(".\n");
+        if (n.level != NightReport.LightLevel.HLL && !n.hllPeriods.isEmpty()) {
+            sb.append("\u2022 HLL: ");
+            for (int i = 0; i < n.hllPeriods.size(); i++) {
+                NightReport.HllPeriod p = n.hllPeriods.get(i);
+                if (i > 0)
+                    sb.append(", ");
+                sb.append(Formats.time(p.start, z)).append("\u2013")
+                        .append(Formats.time(p.end, z));
+                if (p.twilightOnly)
+                    sb.append(" (twilight)");
+            }
+            sb.append(". The rest of the window is LLL.\n");
+        }
         if (!Double.isNaN(n.lowMoonFraction) && n.lowMoonFraction >= 0.10
                 && n.level != NightReport.LightLevel.LLL)
             sb.append("• Moon below ")
