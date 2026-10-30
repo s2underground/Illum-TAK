@@ -4,7 +4,7 @@
 
 #show: userguide.with(
    plugin-name: "Illum",
-   plugin-version: "1.0",
+   plugin-version: "1.0.1",
    platform: "ATAK",
    platform-version: "5.6.0",
 )
@@ -57,10 +57,10 @@ Each night's rated window (default EENT to BMNT) is checked every 5 minutes:
   = Settings
 Open them from the pane's *Settings* button, or from Settings › Tool Preferences › Specific Tool Preferences › Illum Preferences.
 - Service standard, mission type, custom standard values.
-- Rated window: EENT–BMNT, sunset–sunrise, or custom clock times (for example 2200–0400; a start before noon means the following morning).
+- Rated window: EENT–BMNT, sunset–sunrise, or custom clock times (for example 2200–0400). Custom times are in the display time zone; Illum uses the occurrence that falls within that night.
 - Sky condition: clear, thin clouds (÷2), average clouds (÷3), dark stratus (÷10), from U.S. Naval Observatory (USNO) Circular 171.
 - Include starlight/airglow (0.5 millilux). This is off by default, which is more conservative for NVG planning.
-- Time zone: device local, Zulu, AO nautical zone (by longitude, without daylight saving), or a manual offset. The night always runs from local noon to local noon.
+- Time zone: device local, Zulu, AO nautical zone (by longitude, without daylight saving), or a manual offset. This only changes how times are labelled. Each night is always worked out from noon to noon *at the selected location*, so the whole night is covered whatever time zone your device is set to.
 - Number of planning nights: 7 to 90.
 
 = Accuracy and limits

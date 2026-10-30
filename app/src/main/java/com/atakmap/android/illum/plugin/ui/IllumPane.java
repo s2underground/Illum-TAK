@@ -384,9 +384,9 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     // Dates
     // ------------------------------------------------------------------
 
-    private static long tonight(DisplayZone zone) {
-        // the night whose noon-to-noon span contains "now"
-        return CivilDate.epochDayOf(System.currentTimeMillis() - 12 * 3600000L, zone);
+    private static long tonight(double lonDeg) {
+        // the night (at the location) whose noon-to-noon frame contains "now"
+        return NightCalculator.nightOf(System.currentTimeMillis(), lonDeg);
     }
 
     private void shiftDay(int delta) {
@@ -434,7 +434,7 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         in.nights = IllumPrefs.planNights(all);
         in.showZulu = IllumPrefs.showZulu(all);
         in.allTwilight = IllumPrefs.allTwilight(all);
-        in.firstDay = tonight(in.zone);
+        in.firstDay = tonight(in.lon);
         if (followTonight || selectedDay == Long.MIN_VALUE) {
             selectedDay = in.firstDay;
             followTonight = true;
@@ -595,6 +595,9 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
                 .append(small("\n" + n.phaseName)),
                 "Moon max",
                 Double.isNaN(n.moonMaxAltDeg) ? new SpannableStringBuilder("--")
+                        : n.moonMaxAltDeg < 0
+                                ? new SpannableStringBuilder("down")
+                                        .append(small("\nall window"))
                         : new SpannableStringBuilder(Formats.altitude(n.moonMaxAltDeg))
                                 .append(small("\n@ " + Formats.time(n.moonMaxAltTime, z))));
         addRow("Moonlight",

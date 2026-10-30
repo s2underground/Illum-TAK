@@ -33,6 +33,21 @@ public final class NightCalculator {
         return -REFRACTION - 0.2725 * parallaxDeg;
     }
 
+    /**
+     * The time frame a night is computed in: noon to noon in the nautical
+     * time zone of the LOCATION (its longitude), never the display zone.
+     * This guarantees the whole night (sunset to sunrise) at the location is
+     * inside the frame whatever time zone the device is set to.
+     */
+    public static DisplayZone frameFor(double lonDeg) {
+        return DisplayZone.nautical(lonDeg);
+    }
+
+    /** The night (evening date at the location) whose noon-to-noon frame contains an instant. */
+    public static long nightOf(long utcMillis, double lonDeg) {
+        return CivilDate.epochDayOf(utcMillis - 12 * 3600000L, frameFor(lonDeg));
+    }
+
     /** Compute one night. */
     public static NightReport compute(double latDeg, double lonDeg, long epochDay,
             DisplayZone zone, PlanSettings settings) {
@@ -40,8 +55,10 @@ public final class NightCalculator {
         r.latDeg = latDeg;
         r.lonDeg = lonDeg;
         r.epochDay = epochDay;
-        r.spanStart = CivilDate.localToUtc(epochDay, 12 * 60, zone);
-        r.spanEnd = CivilDate.localToUtc(epochDay + 1, 12 * 60, zone);
+        // Frame by the location, not the display zone (see frameFor).
+        DisplayZone frame = frameFor(lonDeg);
+        r.spanStart = CivilDate.localToUtc(epochDay, 12 * 60, frame);
+        r.spanEnd = CivilDate.localToUtc(epochDay + 1, 12 * 60, frame);
 
         long step = settings.sampleMinutes * 60000L;
         int n = (int) ((r.spanEnd - r.spanStart) / step) + 1;
@@ -209,14 +226,25 @@ public final class NightCalculator {
     private static void window(NightReport r, DisplayZone zone, PlanSettings ps) {
         switch (ps.windowMode) {
             case CUSTOM: {
-                // A start before noon means the following morning.
-                long startDay = ps.customStartMin >= 12 * 60 ? r.epochDay : r.epochDay + 1;
-                long start = CivilDate.localToUtc(startDay, ps.customStartMin, zone);
-                long end = CivilDate.localToUtc(startDay, ps.customEndMin, zone);
-                if (end <= start)
-                    end = CivilDate.localToUtc(startDay + 1, ps.customEndMin, zone);
-                r.windowStart = start;
-                r.windowEnd = end;
+                // Clock times are in the display zone. Use the occurrence whose
+                // middle is closest to the middle of this night's frame (about
+                // local midnight at the location), so the window always belongs
+                // to this night whatever the device's time zone.
+                long dur = (((ps.customEndMin - ps.customStartMin) % 1440 + 1440) % 1440)
+                        * 60000L;
+                if (dur == 0)
+                    dur = 24 * 3600000L;
+                long mid = r.spanStart + (r.spanEnd - r.spanStart) / 2;
+                long zDay = CivilDate.epochDayOf(mid, zone);
+                long best = NightReport.NONE;
+                for (int k = -2; k <= 2; k++) {
+                    long s = CivilDate.localToUtc(zDay + k, ps.customStartMin, zone);
+                    if (best == NightReport.NONE
+                            || Math.abs(s + dur / 2 - mid) < Math.abs(best + dur / 2 - mid))
+                        best = s;
+                }
+                r.windowStart = best;
+                r.windowEnd = best + dur;
                 r.windowLabel = "Custom";
                 break;
             }

@@ -26,8 +26,9 @@ Illum Preferences, or the Settings button in the pane.
 _________________________________________________________________
 STATUS
 
-1.0 released Oct 29, 2026. Signed by the TAK.gov Third Party Pipeline
-(built against ATAK-CIV 5.6.0.26; Fortify scan: 0 issues).
+1.0.1 (Oct 2026): fixes nights being cut short when the device's time zone is
+far (about 5+ hours) from the selected location. 1.0 released Oct 29, 2026
+(TAK.gov signed).
 
 _________________________________________________________________
 POINT OF CONTACTS
