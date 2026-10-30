@@ -56,15 +56,13 @@
     </string-array>
 
     <string-array name="zone_entries">
-        <item>Device local time</item>
+        <item>Local time at the point (automatic)</item>
         <item>Zulu (UTC)</item>
-        <item>AO nautical zone (by longitude)</item>
         <item>Manual UTC offset</item>
     </string-array>
     <string-array name="zone_values" translatable="false">
-        <item>device</item>
+        <item>auto</item>
         <item>zulu</item>
-        <item>ao</item>
         <item>manual</item>
     </string-array>
 

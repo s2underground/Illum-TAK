@@ -90,14 +90,22 @@
             android:defaultValue="false" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_cat_terrain">
+        <CheckBoxPreference
+            android:key="illum_terrain"
+            android:title="@string/pref_terrain"
+            android:summary="@string/pref_terrain_summary"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/pref_cat_display">
         <ListPreference
             android:key="illum_time_zone"
             android:title="@string/pref_time_zone"
             android:entries="@array/zone_entries"
             android:entryValues="@array/zone_values"
-            android:defaultValue="device"
-            android:summary="%s" />
+            android:defaultValue="auto"
+            android:summary="@string/pref_time_zone_summary" />
         <EditTextPreference
             android:key="illum_manual_offset"
             android:title="@string/pref_manual_offset"

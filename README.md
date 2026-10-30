@@ -14,6 +14,15 @@ position, the map center, or a point or marker you tap) it shows:
   (HLL), Low Light Level (LLL) or mixed, under a selectable standard:
   USAF (2.2 millilux), USN/USMC (0.0022 lux), Army (23% moon, 30 deg up)
   or custom values, for an NVG/aviation or a ground-concealment mission
+- A plain-language shadow outlook (short / medium / long shadows, which way
+  they point, and when a low moon causes NVG glare)
+- Optional "Factor in terrain" (beyond doctrine): uses DTED/SRTM elevation
+  data loaded in ATAK to block moonlight while the moon is behind local
+  terrain, and shows when the moon actually clears the skyline. The doctrine
+  (flat terrain) rating is always shown alongside.
+- Times shown as local time at the selected point (labelled with the zone
+  letter, Zulu underneath), so planning a distant area never shows a
+  "sunset" in the morning
 - A planning grid of 7 to 90 nights
 
 All data is computed on the device from astronomical formulas (Meeus,
@@ -26,9 +35,12 @@ Illum Preferences, or the Settings button in the pane.
 _________________________________________________________________
 STATUS
 
+1.1 (Oct 2026): plain-language shadow outlook, optional terrain masking
+(beyond doctrine), and times shown in the local time of the selected point.
 1.0.1 (Oct 2026): fixes nights being cut short when the device's time zone is
-far (about 5+ hours) from the selected location. 1.0 released Oct 29, 2026
-(TAK.gov signed).
+far (about 5+ hours) from the selected location.
+1.0 released Oct 29, 2026. All releases signed by the TAK.gov Third Party
+Pipeline.
 
 _________________________________________________________________
 POINT OF CONTACTS
@@ -38,7 +50,8 @@ S2Underground - s2underground@protonmail.com
 _________________________________________________________________
 PORTS REQUIRED
 
-None. Illum makes no network connections.
+None. Illum makes no network connections. With "Factor in terrain" on, it
+reads elevation data already loaded in ATAK.
 
 _________________________________________________________________
 EQUIPMENT REQUIRED

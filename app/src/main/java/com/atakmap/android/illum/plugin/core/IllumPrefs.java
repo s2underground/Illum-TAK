@@ -27,6 +27,7 @@ public final class IllumPrefs {
     public static final String SHOW_ZULU = "illum_show_zulu";
     public static final String PLAN_NIGHTS = "illum_plan_nights";
     public static final String ALL_TWILIGHT = "illum_all_twilight";
+    public static final String TERRAIN = "illum_terrain";
 
     // remembered state (not shown in settings)
     public static final String LAST_LAT = "illum_last_lat";
@@ -76,21 +77,65 @@ public final class IllumPrefs {
         return b.build();
     }
 
-    /** Display zone for a location. */
-    public static DisplayZone zone(Map<String, ?> p, double lonDeg, TimeZone deviceZone) {
-        String z = str(p, TIME_ZONE, "device");
+    /**
+     * Within this distance of the device's own position, the device's clock
+     * is taken to be the local time at the point.
+     */
+    public static final double NEAR_SELF_METERS = 100000;
+    /**
+     * ... provided the device's zone is within this many hours of the
+     * military zone there (so a device kept on Zulu or home time while
+     * deployed is not mistaken for local time).
+     */
+    public static final double NEAR_SELF_MAX_DIFF_HOURS = 2;
+
+    /**
+     * Zone used to show times for a point. The default ("auto") is the local
+     * time at the point: the device's own zone (daylight saving aware) when
+     * the point is near the device, otherwise the military time zone for the
+     * point's longitude. Zulu and a manual offset can be chosen instead.
+     *
+     * @param selfLat device position, NaN if unknown
+     */
+    public static DisplayZone zone(Map<String, ?> p, double latDeg, double lonDeg,
+            double selfLat, double selfLon, TimeZone deviceZone, long nowUtc) {
+        String z = str(p, TIME_ZONE, "auto");
         switch (z) {
             case "zulu":
                 return DisplayZone.ZULU;
-            case "ao":
-                return DisplayZone.nautical(lonDeg);
             case "manual": {
                 double h = clamp(num(p, MANUAL_OFFSET, 0), -14, 14);
                 return DisplayZone.fixedMinutes((int) Math.round(h * 60));
             }
-            default:
-                return DisplayZone.of(deviceZone);
+            default: // "auto", and the 1.0 values "device" and "ao"
+                return localAt(latDeg, lonDeg, selfLat, selfLon, deviceZone, nowUtc);
         }
+    }
+
+    /** The local time zone at a point (see {@link #zone}). */
+    public static DisplayZone localAt(double latDeg, double lonDeg, double selfLat,
+            double selfLon, TimeZone deviceZone, long nowUtc) {
+        DisplayZone mil = DisplayZone.nautical(lonDeg);
+        if (deviceZone == null || Double.isNaN(selfLat) || Double.isNaN(selfLon))
+            return mil;
+        if (distanceMeters(latDeg, lonDeg, selfLat, selfLon) > NEAR_SELF_METERS)
+            return mil;
+        double diffH = Math.abs(deviceZone.getOffset(nowUtc) - mil.offsetMillis(nowUtc))
+                / 3600000.0;
+        return diffH <= NEAR_SELF_MAX_DIFF_HOURS ? DisplayZone.of(deviceZone) : mil;
+    }
+
+    /** True for stored zone values from 1.0 that now mean "auto". */
+    public static boolean isLegacyZone(Object v) {
+        return "device".equals(v) || "ao".equals(v);
+    }
+
+    static double distanceMeters(double lat1, double lon1, double lat2, double lon2) {
+        double p1 = Math.toRadians(lat1), p2 = Math.toRadians(lat2);
+        double dp = p2 - p1, dl = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dp / 2) * Math.sin(dp / 2)
+                + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+        return 2 * 6371000.0 * Math.asin(Math.min(1, Math.sqrt(a)));
     }
 
     public static boolean showZulu(Map<String, ?> p) {
@@ -99,6 +144,11 @@ public final class IllumPrefs {
 
     public static boolean allTwilight(Map<String, ?> p) {
         return bool(p, ALL_TWILIGHT, false);
+    }
+
+    /** Beyond doctrine: mask moonlight with local terrain. Off by default. */
+    public static boolean terrain(Map<String, ?> p) {
+        return bool(p, TERRAIN, false);
     }
 
     public static int planNights(Map<String, ?> p) {

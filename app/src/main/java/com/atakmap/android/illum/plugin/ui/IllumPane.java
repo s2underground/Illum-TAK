@@ -30,6 +30,8 @@ import com.atakmap.android.illum.plugin.R;
 import com.atakmap.android.illum.plugin.core.CivilDate;
 import com.atakmap.android.illum.plugin.core.DisplayZone;
 import com.atakmap.android.illum.plugin.core.Formats;
+import com.atakmap.android.illum.plugin.core.HorizonProfile;
+import com.atakmap.android.illum.plugin.core.ShadowOutlook;
 import com.atakmap.android.illum.plugin.core.IllumPrefs;
 import com.atakmap.android.illum.plugin.core.LightStandard;
 import com.atakmap.android.illum.plugin.core.NightCalculator;
@@ -76,6 +78,7 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     private final SharedPreferences prefs;
     private final View root;
     private final ScrollView scroll;
+    private final TextView shadowTitle, shadowLines, timesZone;
     private final TextView locName, locCoord, dateLabel, bannerTitle, bannerSub, notes,
             planHeader, standardRef;
     private final LinearLayout banner, planRows;
@@ -107,7 +110,12 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         long firstDay;
         int nights;
         long selectedDay;
-        boolean showZulu, allTwilight;
+        boolean showZulu, allTwilight, terrain;
+    }
+
+    /** Outcome of the terrain lookup for a location. */
+    enum TerrainStatus {
+        OFF, OK, NO_DATA, ERROR
     }
 
     /** Immutable results. */
@@ -116,7 +124,29 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         List<NightReport> plan = Collections.emptyList();
         NightReport selected;
         String error;
+        TerrainStatus terrainStatus = TerrainStatus.OFF;
+        HorizonProfile horizon;
+        long terrainMillis;
     }
+
+    /** Last terrain lookup; touched only on the compute thread. */
+    private static final class TerrainCache {
+        final double lat, lon;
+        final HorizonProfile profile;
+        final TerrainStatus status;
+        final long millis;
+
+        TerrainCache(double lat, double lon, HorizonProfile profile, TerrainStatus status,
+                long millis) {
+            this.lat = lat;
+            this.lon = lon;
+            this.profile = profile;
+            this.status = status;
+            this.millis = millis;
+        }
+    }
+
+    private TerrainCache terrainCache;
 
     private Result last;
 
@@ -131,6 +161,7 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         this.plugin = pluginContext;
         this.mapView = mapView;
         this.prefs = PreferenceManager.getDefaultSharedPreferences(mapView.getContext());
+        migrateZonePref(prefs);
 
         root = PluginLayoutInflater.inflate(pluginContext, R.layout.illum_pane, null);
         scroll = root.findViewById(R.id.illum_scroll);
@@ -141,7 +172,10 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         bannerTitle = root.findViewById(R.id.banner_title);
         bannerSub = root.findViewById(R.id.banner_sub);
         timesTable = root.findViewById(R.id.times_table);
+        timesZone = root.findViewById(R.id.times_zone);
         notes = root.findViewById(R.id.notes);
+        shadowTitle = root.findViewById(R.id.shadow_title);
+        shadowLines = root.findViewById(R.id.shadow_lines);
         planHeader = root.findViewById(R.id.plan_header);
         planRows = root.findViewById(R.id.plan_rows);
         standardRef = root.findViewById(R.id.standard_ref);
@@ -430,10 +464,13 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         in.lat = lat;
         in.lon = lon;
         in.settings = IllumPrefs.settings(all);
-        in.zone = IllumPrefs.zone(all, lon, TimeZone.getDefault());
+        double[] self = selfPosition();
+        in.zone = IllumPrefs.zone(all, lat, lon, self[0], self[1], TimeZone.getDefault(),
+                System.currentTimeMillis());
         in.nights = IllumPrefs.planNights(all);
         in.showZulu = IllumPrefs.showZulu(all);
         in.allTwilight = IllumPrefs.allTwilight(all);
+        in.terrain = IllumPrefs.terrain(all);
         in.firstDay = tonight(in.lon);
         if (followTonight || selectedDay == Long.MIN_VALUE) {
             selectedDay = in.firstDay;
@@ -466,18 +503,41 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     }
 
     /** Background thread. */
-    static Result compute(Inputs in) {
+    Result compute(Inputs in) {
         Result r = new Result();
         r.in = in;
         try {
+            if (in.terrain) {
+                TerrainCache c = terrainCache;
+                if (c == null || c.lat != in.lat || c.lon != in.lon) {
+                    HorizonProfile p = null;
+                    TerrainStatus st;
+                    long t0 = android.os.SystemClock.elapsedRealtime();
+                    try {
+                        p = HorizonProfile.build(in.lat, in.lon, new AtakElevationSampler(),
+                                HorizonProfile.DEFAULT_RADIUS_M);
+                        st = p != null ? TerrainStatus.OK : TerrainStatus.NO_DATA;
+                    } catch (RuntimeException e) {
+                        Log.w(TAG, "terrain lookup failed", e);
+                        st = TerrainStatus.ERROR;
+                    }
+                    c = new TerrainCache(in.lat, in.lon, p, st,
+                            android.os.SystemClock.elapsedRealtime() - t0);
+                    Log.i(TAG, "terrain lookup " + st + " in " + c.millis + " ms");
+                    terrainCache = c;
+                }
+                r.terrainStatus = c.status;
+                r.horizon = c.profile;
+                r.terrainMillis = c.millis;
+            }
             r.plan = NightCalculator.range(in.lat, in.lon, in.firstDay, in.nights, in.zone,
-                    in.settings);
+                    in.settings, r.horizon);
             long idx = in.selectedDay - in.firstDay;
             if (idx >= 0 && idx < r.plan.size())
                 r.selected = r.plan.get((int) idx);
             else
                 r.selected = NightCalculator.compute(in.lat, in.lon, in.selectedDay, in.zone,
-                        in.settings);
+                        in.settings, r.horizon);
         } catch (RuntimeException e) {
             Log.e(TAG, "illumination computation failed", e);
             r.error = "Could not compute light data for this location.";
@@ -488,6 +548,34 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     // ------------------------------------------------------------------
     // Render
     // ------------------------------------------------------------------
+
+    /** Device position, or NaN if there is no fix yet. */
+    private double[] selfPosition() {
+        try {
+            Marker self = ATAKUtilities.findSelf(mapView);
+            GeoPoint gp = self != null ? self.getPoint() : null;
+            if (gp != null && gp.isValid()
+                    && !(gp.getLatitude() == 0 && gp.getLongitude() == 0))
+                return new double[] {
+                        gp.getLatitude(), gp.getLongitude()
+                };
+        } catch (RuntimeException e) {
+            Log.w(TAG, "no self position", e);
+        }
+        return new double[] {
+                Double.NaN, Double.NaN
+        };
+    }
+
+    /** 1.0 offered "device" and "ao"; both now mean local time at the point. */
+    private static void migrateZonePref(SharedPreferences prefs) {
+        try {
+            if (IllumPrefs.isLegacyZone(prefs.getString(IllumPrefs.TIME_ZONE, null)))
+                prefs.edit().putString(IllumPrefs.TIME_ZONE, "auto").apply();
+        } catch (RuntimeException e) {
+            Log.w(TAG, "could not migrate the time zone setting", e);
+        }
+    }
 
     private void showLocation(Inputs in) {
         locName.setText(placeName.isEmpty() ? "Location" : placeName);
@@ -527,10 +615,15 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
                     + mission, Color.WHITE);
         } else {
             int color = colorFor(n.rating);
-            String title = n.rating.name() + " · " + levelText(n.level);
+            String title = n.rating.name() + " · " + levelText(n.level)
+                    + (n.terrainApplied ? " (terrain)" : "");
             String sub = Formats.percent(n.hllFraction) + " of " + n.windowLabel + " ("
                     + Formats.time(n.windowStart, z) + "–" + Formats.time(n.windowEnd, z)
                     + ") is HLL · " + ps.standard.label + " · " + mission;
+            if (n.terrainApplied)
+                sub += "\nDoctrine (flat terrain): " + n.doctrineRating.name() + " · "
+                        + levelText(n.doctrineLevel) + " · HLL "
+                        + Formats.percent(n.doctrineHllFraction);
             setBanner(color, title, sub, n.rating == NightReport.Rating.AMBER ? Color.BLACK
                     : Color.WHITE);
         }
@@ -538,7 +631,8 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         bannerMoon.setPhase(n.illumPercent / 100.0, n.waxing, in.lat < 0);
         renderTimes(n, in);
         timeline.setData(n, z, ps);
-        renderNotes(n, in);
+        renderShadows(n, z);
+        renderNotes(n, in, r);
         renderPlan(r);
         standardRef.setText(ps.standard.reference
                 + (ps.sky != PlanSettings.Sky.CLEAR ? " Sky: " + ps.sky.label + "." : "")
@@ -583,6 +677,9 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         timesTable.removeAllViews();
         DisplayZone z = in.zone;
         boolean zu = in.showZulu;
+        long ref = n.hasWindow() ? n.windowStart : n.spanStart;
+        timesZone.setText(z.isUtc() ? "Times in Zulu (UTC)"
+                : "Times in " + z.describe(ref) + (zu ? ". Zulu underneath." : "."));
         addRow("Sunset", time(n.sunset, z, zu), "EENT", time(n.eent, z, zu));
         addRow("BMNT", time(n.bmnt, z, zu), "Sunrise", time(n.sunrise, z, zu));
         if (in.allTwilight) {
@@ -590,6 +687,10 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
             addRow("EEAT", time(n.eeat, z, zu), "BMAT", time(n.bmat, z, zu));
         }
         addRow("Moonrise", moon(n, true, z), "Moonset", moon(n, false, z));
+        CharSequence clears = terrainMoon(n, true, z), hides = terrainMoon(n, false, z);
+        if (clears != null || hides != null)
+            addRow("Clears terrain", clears != null ? clears : "--", "Behind terrain",
+                    hides != null ? hides : "--");
         addRow("Illum", new SpannableStringBuilder(String.format(Locale.US, "%.0f%% %s",
                 n.illumPercent, n.waxing ? "↑" : "↓"))
                 .append(small("\n" + n.phaseName)),
@@ -640,6 +741,62 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         return sb;
     }
 
+    /**
+     * Terrain moon events that differ from the astronomical ones by more than
+     * a few minutes (where the skyline actually matters); null if none.
+     */
+    private static CharSequence terrainMoon(NightReport n, boolean rise, DisplayZone z) {
+        SpannableStringBuilder sb = new SpannableStringBuilder();
+        for (NightReport.MoonEvent t : n.terrainMoonEvents) {
+            if (t.rise != rise)
+                continue;
+            boolean same = false;
+            for (NightReport.MoonEvent e : n.moonEvents)
+                same |= e.rise == rise && Math.abs(e.time - t.time) <= 3 * 60000L;
+            if (same)
+                continue;
+            if (sb.length() > 0)
+                sb.append("\n");
+            sb.append(Formats.time(t.time, z));
+            sb.append(small(" @" + Formats.degrees(t.azimuthDeg)));
+        }
+        return sb.length() == 0 ? null : sb;
+    }
+
+    private void renderShadows(NightReport n, DisplayZone z) {
+        if (!n.hasWindow()) {
+            shadowTitle.setVisibility(View.GONE);
+            shadowLines.setVisibility(View.GONE);
+            return;
+        }
+        shadowTitle.setVisibility(View.VISIBLE);
+        shadowLines.setVisibility(View.VISIBLE);
+        shadowTitle.setText(plugin.getString(R.string.shadows_title, n.shadows.headline()));
+        int color;
+        switch (n.shadows.level) {
+            case HEAVY:
+                color = 0xFFFFB74D;
+                break;
+            case MODERATE:
+                color = 0xFFFFF176;
+                break;
+            case LIGHT:
+                color = 0xFFAED581;
+                break;
+            default:
+                color = 0xFFBDBDBD;
+                break;
+        }
+        shadowTitle.setTextColor(color);
+        StringBuilder sb = new StringBuilder();
+        for (String line : n.shadows.lines(z)) {
+            if (sb.length() > 0)
+                sb.append('\n');
+            sb.append("\u2022 ").append(line);
+        }
+        shadowLines.setText(sb.toString());
+    }
+
     private static CharSequence small(String s) {
         SpannableStringBuilder sb = new SpannableStringBuilder(s);
         sb.setSpan(new RelativeSizeSpan(0.8f), 0, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -680,8 +837,37 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         return Math.round(v * plugin.getResources().getDisplayMetrics().density);
     }
 
-    private void renderNotes(NightReport n, Inputs in) {
+    private void renderNotes(NightReport n, Inputs in, Result r) {
         StringBuilder sb = new StringBuilder();
+        switch (r.terrainStatus) {
+            case OK: {
+                HorizonProfile h = r.horizon;
+                double[] hi = h.highest();
+                sb.append("\u2022 Terrain on (beyond doctrine): skyline from elevation data within ")
+                        .append(Math.round(h.radiusM / 1000)).append(" km. Highest: ")
+                        .append(String.format(Locale.US, "%.0f\u00b0", hi[0]))
+                        .append(" to the ").append(ShadowOutlook.compass8(hi[1]))
+                        .append(". Bare earth only, for this exact point.")
+                        .append(String.format(Locale.US, " (Elevation read in %.1f s.)",
+                                r.terrainMillis / 1000.0))
+                        .append('\n');
+                if (h.coverage < 0.9)
+                    sb.append("\u2022 Elevation data covers only ")
+                            .append(Formats.percent(h.coverage))
+                            .append(" of the area around this point.\n");
+                break;
+            }
+            case NO_DATA:
+                sb.append("\u2022 Terrain is on, but no elevation data is loaded for this point."
+                        + " Showing doctrine (flat terrain) results.\n");
+                break;
+            case ERROR:
+                sb.append("\u2022 Could not read elevation data. Showing doctrine (flat terrain)"
+                        + " results.\n");
+                break;
+            default:
+                break;
+        }
         DisplayZone z = in.zone;
         PlanSettings ps = in.settings;
         if (n.noNauticalDarkness)
@@ -723,7 +909,9 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     private void renderPlan(final Result r) {
         Inputs in = r.in;
         planHeader.setText(plugin.getString(R.string.plan_header, r.plan.size()) + " · "
-                + in.zone.describe(System.currentTimeMillis()));
+                + "times " + in.zone.suffix(r.selected != null ? r.selected.spanStart
+                        : System.currentTimeMillis())
+                + (r.horizon != null ? " · terrain" : ""));
         planRows.removeAllViews();
 
         // column header

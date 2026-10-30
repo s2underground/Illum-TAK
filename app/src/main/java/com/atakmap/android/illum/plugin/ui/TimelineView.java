@@ -30,6 +30,7 @@ public class TimelineView extends View {
     static final int DAY = 0xFF4F6B85, CIVIL = 0xFF34485C, NAUT = 0xFF243241,
             ASTRO = 0xFF18212B, NIGHT = 0xFF0E1319;
     static final int MOON = 0xFFFFF59D;
+    static final int MOON_HIDDEN = 0xFF6D6A4C;
 
     private NightReport night;
     private DisplayZone zone = DisplayZone.ZULU;
@@ -135,7 +136,9 @@ public class TimelineView extends View {
             fill.setColor(sky(n.sampleSunAlt[i]));
             c.drawRect(xa, labelH, xb, chartBot, fill);
             if (n.sampleMoonAlt[i] > 0) {
-                fill.setColor(MOON);
+                // dim when the moon is up but hidden behind terrain
+                boolean visible = n.sampleMoonVisible == null || n.sampleMoonVisible[i];
+                fill.setColor(visible ? MOON : MOON_HIDDEN);
                 c.drawRect(xa, labelH, xb, labelH + moonH, fill);
             }
             boolean hll = n.sampleHll[i];

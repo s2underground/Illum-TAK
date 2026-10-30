@@ -94,12 +94,27 @@ public final class NightReport {
     public LightLevel level = LightLevel.NONE;
     public Rating rating = Rating.NONE;
 
+    // terrain (only when a horizon profile was used)
+    /** True when level/rating/HLL figures include terrain masking. */
+    public boolean terrainApplied;
+    /** Moon clears / drops behind the local terrain (empty without terrain). */
+    public List<MoonEvent> terrainMoonEvents = Collections.emptyList();
+    /** The doctrine (flat terrain) result, always available. */
+    public LightLevel doctrineLevel = LightLevel.NONE;
+    public Rating doctrineRating = Rating.NONE;
+    public double doctrineHllFraction = Double.NaN;
+
+    /** Plain-language shadow outlook for the window. */
+    public ShadowOutlook shadows = ShadowOutlook.EMPTY;
+
     // span samples (for the timeline graphic)
     public long sampleStep;
     public float[] sampleLux;
     public float[] sampleSunAlt;
     public float[] sampleMoonAlt;
     public boolean[] sampleHll;
+    /** Moon above the horizon (or the terrain skyline, with terrain on). */
+    public boolean[] sampleMoonVisible;
 
     public long sampleTime(int i) {
         return spanStart + i * sampleStep;

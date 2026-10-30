@@ -12,10 +12,13 @@ public abstract class DisplayZone {
     /** Offset from UTC in milliseconds at the given instant. */
     public abstract long offsetMillis(long utcMillis);
 
-    /** Short suffix shown after a time, e.g. "Z", "L", "R". */
+    /**
+     * Short suffix shown after a time: the military zone letter for the
+     * offset, e.g. "Z", "R" (UTC-5), "D" (UTC+4), "C*" (UTC+3:30).
+     */
     public abstract String suffix(long utcMillis);
 
-    /** Longer description, e.g. "Local (UTC-4)". */
+    /** Longer description, e.g. "D = UTC+4". */
     public abstract String describe(long utcMillis);
 
     public boolean isUtc() {
@@ -40,8 +43,9 @@ public abstract class DisplayZone {
 
     /** A fixed offset, e.g. a manual setting. */
     public static DisplayZone fixedMinutes(int offsetMinutes) {
-        return new Fixed(offsetMinutes * 60000L, "L",
-                "Manual (" + formatOffset(offsetMinutes * 60000L) + ")");
+        long off = offsetMinutes * 60000L;
+        String letter = letterFor(off);
+        return new Fixed(off, letter, letter + " = " + formatOffset(off) + ", manual setting");
     }
 
     /**
@@ -56,8 +60,21 @@ public abstract class DisplayZone {
         if (hours < -12)
             hours = -12;
         String letter = militaryLetter(hours);
-        return new Fixed(hours * 3600000L, letter,
-                "AO zone " + letter + " (" + formatOffset(hours * 3600000L) + ")");
+        return new Fixed(hours * 3600000L, letter, letter + " = "
+                + formatOffset(hours * 3600000L) + ", military time zone at this longitude");
+    }
+
+    /**
+     * Military zone letter for any offset. Offsets that are not whole hours
+     * take the letter of the whole-hour part plus an asterisk, e.g.
+     * UTC+3:30 = "C*", UTC+5:30 = "E*", UTC-3:30 = "P*".
+     */
+    public static String letterFor(long offsetMillis) {
+        long mins = offsetMillis / 60000L;
+        int hours = (int) (mins / 60); // toward zero
+        hours = Math.max(-12, Math.min(14, hours));
+        String letter = hours > 12 ? "M" : militaryLetter(hours);
+        return mins % 60 == 0 && hours <= 12 ? letter : letter + "*";
     }
 
     static String militaryLetter(int hours) {
@@ -123,12 +140,13 @@ public abstract class DisplayZone {
 
         @Override
         public String suffix(long utcMillis) {
-            return "L";
+            return letterFor(offsetMillis(utcMillis));
         }
 
         @Override
         public String describe(long utcMillis) {
-            return "Local (" + formatOffset(offsetMillis(utcMillis)) + ")";
+            long off = offsetMillis(utcMillis);
+            return letterFor(off) + " = " + formatOffset(off) + ", local time here (device clock)";
         }
     }
 }

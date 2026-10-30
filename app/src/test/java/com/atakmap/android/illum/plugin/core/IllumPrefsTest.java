@@ -73,14 +73,67 @@ public class IllumPrefsTest {
     public void zones() {
         Map<String, Object> p = new HashMap<>();
         TimeZone ny = TimeZone.getTimeZone("America/New_York");
-        assertEquals("L", IllumPrefs.zone(p, -77, ny).suffix(0));
+        long summer = CivilDate.fromCivil(2026, 7, 1) * 86400000L;
+        long winter = CivilDate.fromCivil(2026, 12, 1) * 86400000L;
+        double nan = Double.NaN;
+
+        // default: local time at the point. Far from the device -> military zone.
+        DisplayZone iran = IllumPrefs.zone(p, 27.05, 57.53, 38.89, -77.04, ny, summer);
+        assertEquals("D", iran.suffix(summer));
+        assertEquals(4 * 3600000L, iran.offsetMillis(summer));
+        // no GPS fix -> military zone
+        assertEquals("R", IllumPrefs.zone(p, 38.89, -77.04, nan, nan, ny, summer).suffix(0));
+        // at the device (My Pos) -> the device clock, daylight saving included
+        DisplayZone here = IllumPrefs.zone(p, 38.89, -77.04, 38.89, -77.04, ny, summer);
+        assertEquals(-4 * 3600000L, here.offsetMillis(summer));
+        assertEquals("Q", here.suffix(summer));
+        assertEquals("R", here.suffix(winter));
+        // 50 km away still counts as here; 300 km away does not
+        assertEquals("Q", IllumPrefs.zone(p, 39.3, -77.2, 38.89, -77.04, ny, summer)
+                .suffix(summer));
+        assertEquals("R", IllumPrefs.zone(p, 41.5, -77.04, 38.89, -77.04, ny, summer)
+                .suffix(summer));
+        // device kept on Zulu while deployed: not the local time there
+        TimeZone utc = TimeZone.getTimeZone("UTC");
+        assertEquals("C", IllumPrefs.zone(p, 33.3, 44.4, 33.3, 44.4, utc, summer)
+                .suffix(summer));
+
+        // 1.0 settings "device" and "ao" now mean the same as the default
+        for (String legacy : new String[] {
+                "device", "ao"
+        }) {
+            p.put(IllumPrefs.TIME_ZONE, legacy);
+            assertTrue(IllumPrefs.isLegacyZone(legacy));
+            assertEquals("D", IllumPrefs.zone(p, 27.05, 57.53, 38.89, -77.04, ny, summer)
+                    .suffix(summer));
+        }
+        assertFalse(IllumPrefs.isLegacyZone("auto"));
+
         p.put(IllumPrefs.TIME_ZONE, "zulu");
-        assertTrue(IllumPrefs.zone(p, -77, ny).isUtc());
-        p.put(IllumPrefs.TIME_ZONE, "ao");
-        assertEquals("R", IllumPrefs.zone(p, -77, ny).suffix(0));
+        assertTrue(IllumPrefs.zone(p, 0, -77, nan, nan, ny, summer).isUtc());
         p.put(IllumPrefs.TIME_ZONE, "manual");
-        p.put(IllumPrefs.MANUAL_OFFSET, "4.5");
-        assertEquals(270 * 60000L, IllumPrefs.zone(p, 0, ny).offsetMillis(0));
+        p.put(IllumPrefs.MANUAL_OFFSET, "3.5");
+        DisplayZone m = IllumPrefs.zone(p, 27.05, 57.53, nan, nan, ny, summer);
+        assertEquals(210 * 60000L, m.offsetMillis(0));
+        assertEquals("C*", m.suffix(0));
+    }
+
+    @Test
+    public void zoneLetters() {
+        assertEquals("Z", DisplayZone.letterFor(0));
+        assertEquals("D", DisplayZone.letterFor(4 * 3600000L));
+        assertEquals("Q", DisplayZone.letterFor(-4 * 3600000L));
+        assertEquals("C*", DisplayZone.letterFor(210 * 60000L)); // Iran
+        assertEquals("E*", DisplayZone.letterFor(330 * 60000L)); // India
+        assertEquals("E*", DisplayZone.letterFor(345 * 60000L)); // Nepal
+        assertEquals("P*", DisplayZone.letterFor(-210 * 60000L)); // Newfoundland
+        assertEquals("M", DisplayZone.letterFor(12 * 3600000L));
+        assertEquals("Y", DisplayZone.letterFor(-12 * 3600000L));
+        assertEquals("M*", DisplayZone.letterFor(13 * 3600000L)); // Tonga
+        // every displayed time says which zone it is in
+        DisplayZone d = DisplayZone.nautical(57.53);
+        assertTrue(d.describe(0).startsWith("D = UTC+4"));
+        assertTrue(Formats.time(13 * 3600000L + 37 * 60000L, d).equals("1737D"));
     }
 
     @Test
