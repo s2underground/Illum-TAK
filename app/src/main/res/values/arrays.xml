@@ -56,12 +56,14 @@
     </string-array>
 
     <string-array name="zone_entries">
-        <item>Local time at the point (automatic)</item>
+        <item>Local time at the point (with daylight saving)</item>
+        <item>Military time zone (by longitude)</item>
         <item>Zulu (UTC)</item>
         <item>Manual UTC offset</item>
     </string-array>
     <string-array name="zone_values" translatable="false">
         <item>auto</item>
+        <item>military</item>
         <item>zulu</item>
         <item>manual</item>
     </string-array>

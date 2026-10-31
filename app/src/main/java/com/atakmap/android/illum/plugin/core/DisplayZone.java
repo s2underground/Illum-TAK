@@ -41,6 +41,33 @@ public abstract class DisplayZone {
         return new Device(tz);
     }
 
+    /**
+     * Civil local time at a point, from the time zone map: the zone's own
+     * offset and daylight saving rules from the device's time zone database.
+     */
+    public static DisplayZone localAtPoint(TimeZone tz) {
+        return new Device(tz, "local time at this point");
+    }
+
+    /**
+     * The first instant in (from, to] where the zone's offset changes (a
+     * daylight saving change), or {@link NightReport#NONE}.
+     */
+    public long offsetChange(long from, long to) {
+        if (to <= from || offsetMillis(from) == offsetMillis(to))
+            return NightReport.NONE;
+        long lo = from, hi = to; // offset(lo) != offset(hi)
+        long before = offsetMillis(from);
+        while (hi - lo > 1) {
+            long mid = lo + (hi - lo) / 2;
+            if (offsetMillis(mid) == before)
+                lo = mid;
+            else
+                hi = mid;
+        }
+        return hi; // first instant with the new offset
+    }
+
     /** A fixed offset, e.g. a manual setting. */
     public static DisplayZone fixedMinutes(int offsetMinutes) {
         long off = offsetMinutes * 60000L;
@@ -89,6 +116,23 @@ public abstract class DisplayZone {
         return String.valueOf((char) ('N' + (-hours) - 1));
     }
 
+    /** "EDT", "CET"... or null when the system only has a "GMT+03:30" style name. */
+    static String shortName(TimeZone tz, boolean daylight) {
+        String n;
+        try {
+            n = tz.getDisplayName(daylight, TimeZone.SHORT, Locale.US);
+        } catch (RuntimeException e) {
+            return null;
+        }
+        if (n == null || n.length() < 2 || n.length() > 5 || n.startsWith("GMT")
+                || n.startsWith("UTC"))
+            return null;
+        for (int i = 0; i < n.length(); i++)
+            if (!Character.isLetter(n.charAt(i)))
+                return null;
+        return n;
+    }
+
     public static String formatOffset(long offsetMillis) {
         long mins = Math.abs(offsetMillis) / 60000L;
         String sign = offsetMillis < 0 ? "−" : "+";
@@ -128,9 +172,15 @@ public abstract class DisplayZone {
 
     static final class Device extends DisplayZone {
         final TimeZone tz;
+        final String label;
 
         Device(TimeZone tz) {
+            this(tz, "local time here (device clock)");
+        }
+
+        Device(TimeZone tz, String label) {
             this.tz = tz;
+            this.label = label;
         }
 
         @Override
@@ -146,7 +196,12 @@ public abstract class DisplayZone {
         @Override
         public String describe(long utcMillis) {
             long off = offsetMillis(utcMillis);
-            return letterFor(off) + " = " + formatOffset(off) + ", local time here (device clock)";
+            boolean dst = tz.inDaylightTime(new java.util.Date(utcMillis));
+            String name = shortName(tz, dst);
+            String extra = name != null ? (dst ? name + ", daylight saving" : name)
+                    : (dst ? "daylight saving" : null);
+            return letterFor(off) + " = " + formatOffset(off)
+                    + (extra != null ? " (" + extra + ")" : "") + ", " + label;
         }
     }
 }

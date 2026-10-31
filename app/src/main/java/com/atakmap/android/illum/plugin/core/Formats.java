@@ -71,4 +71,24 @@ public final class Formats {
     public static String moonEvent(NightReport.MoonEvent e, DisplayZone zone) {
         return time(e.time, zone) + " @ " + degrees(e.azimuthDeg);
     }
+
+    /**
+     * A note when the clocks change (daylight saving starts or ends) during
+     * the night, e.g. "Clocks go back 1 h at 0200Q (0600Z), to 0100R. Times
+     * after that are in R (UTC−5)." Null when they do not.
+     */
+    public static String clockChange(NightReport n, DisplayZone z) {
+        long t = z.offsetChange(n.spanStart, n.spanEnd);
+        if (t == NightReport.NONE)
+            return null;
+        long before = z.offsetMillis(t - 1), after = z.offsetMillis(t);
+        long mins = Math.abs(after - before) / 60000L;
+        String amount = mins % 60 == 0 ? (mins / 60) + " h" : mins + " min";
+        DisplayZone was = DisplayZone.fixedMinutes((int) (before / 60000L));
+        DisplayZone now = DisplayZone.fixedMinutes((int) (after / 60000L));
+        return "\u2022 Clocks go " + (after < before ? "back " : "forward ") + amount
+                + " at " + time(t, was) + " (" + time(t, DisplayZone.ZULU) + "), to "
+                + time(t, now) + ". Times after that are in " + now.suffix(t) + " ("
+                + DisplayZone.formatOffset(after) + ").\n";
+    }
 }

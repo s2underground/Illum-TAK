@@ -2,6 +2,7 @@ package com.atakmap.android.illum.plugin.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -98,16 +99,13 @@ public class IllumPrefsTest {
         assertEquals("C", IllumPrefs.zone(p, 33.3, 44.4, 33.3, 44.4, utc, summer)
                 .suffix(summer));
 
-        // 1.0 settings "device" and "ao" now mean the same as the default
-        for (String legacy : new String[] {
-                "device", "ao"
-        }) {
-            p.put(IllumPrefs.TIME_ZONE, legacy);
-            assertTrue(IllumPrefs.isLegacyZone(legacy));
-            assertEquals("D", IllumPrefs.zone(p, 27.05, 57.53, 38.89, -77.04, ny, summer)
-                    .suffix(summer));
-        }
-        assertFalse(IllumPrefs.isLegacyZone("auto"));
+        // 1.0 settings: "device" -> auto (no map here: military zone), "ao" -> military
+        assertEquals("auto", IllumPrefs.migrateZone("device"));
+        assertEquals("military", IllumPrefs.migrateZone("ao"));
+        assertNull(IllumPrefs.migrateZone("auto"));
+        p.put(IllumPrefs.TIME_ZONE, "ao");
+        assertEquals("R", IllumPrefs.zone(p, 38.89, -77.04, 38.89, -77.04, ny, summer)
+                .suffix(summer));
 
         p.put(IllumPrefs.TIME_ZONE, "zulu");
         assertTrue(IllumPrefs.zone(p, 0, -77, nan, nan, ny, summer).isUtc());

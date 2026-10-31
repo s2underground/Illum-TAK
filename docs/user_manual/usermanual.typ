@@ -4,7 +4,7 @@
 
 #show: userguide.with(
    plugin-name: "Illum",
-   plugin-version: "1.1",
+   plugin-version: "1.1.1",
    platform: "ATAK",
    platform-version: "5.6.0",
 )
@@ -29,7 +29,7 @@ Everything is computed on the device from astronomical formulas. Illum needs *no
 #tak-slide[
   = Reading the night card
 - *Banner:* the stoplight color, the light level (HLL, MIXED or LLL), the share of the rated window that is HLL, the window times, the standard and the mission type. The picture on the right shows the moon's phase as you see it (mirrored in the southern hemisphere). The plan rows show a small version.
-- *Times:* Sunset, EENT, BMNT, Sunrise. Civil twilight (EECT/BMCT) and astronomical twilight (EEAT/BMAT) can be turned on in Settings. Times are shown as *local time at the selected point*, so sunset is always in the evening there. The blue line above the times names the zone (for example "D = UTC+4, military time zone at this longitude"), each time carries that zone's letter, and Zulu is shown underneath.
+- *Times:* Sunset, EENT, BMNT, Sunrise. Civil twilight (EECT/BMCT) and astronomical twilight (EEAT/BMAT) can be turned on in Settings. Times are shown as *local time at the selected point*, including daylight saving, so they match the clocks there. The blue line above the times names the zone (for example "Q = UTC−4 (EDT, daylight saving), local time at this point"), each time carries that zone's military letter, and Zulu is shown underneath. On a night when the clocks change, the notes say when.
 - *Moonrise / Moonset:* time and true azimuth. "Up all night" or "down all night" when there is no event.
 - *Illum:* moon illumination at the middle of the window, with an arrow for waxing (↑) or waning (↓).
 - *Moon max:* highest moon elevation inside the window. *Moonlight:* brightest moonlight inside the window, in lux or millilux (mlux).
@@ -60,12 +60,12 @@ Open them from the pane's *Settings* button, or from Settings › Tool Preferenc
 - Rated window: EENT–BMNT, sunset–sunrise, or custom clock times (for example 2200–0400). Custom times are in the zone shown above the times (by default, local time at the point); Illum uses the occurrence that falls within that night.
 - Sky condition: clear, thin clouds (÷2), average clouds (÷3), dark stratus (÷10), from U.S. Naval Observatory (USNO) Circular 171.
 - Include starlight/airglow (0.5 millilux). This is off by default, which is more conservative for NVG planning.
-- Time zone: *Local time at the point* (default), Zulu, or a manual offset. Local time at the point is your device clock (with daylight saving) when the point is within 100 km of you, as with *My Pos*; anywhere else it is the military time zone for the point's longitude (no daylight saving, so it can differ from local clocks: Iran, for example, keeps UTC+3:30 while its military zone is D, UTC+4). Use a manual offset to match a country's clocks exactly. The setting only changes how times are shown: each night is always worked out at the selected location.
+- Time zone: *Local time at the point* (default), *Military time zone*, Zulu, or a manual offset. Local time uses a built-in world time zone map (about 3 km detail) with the device's own daylight saving rules, which Android keeps up to date, so it works offline anywhere: US daylight saving, Arizona, Iran's UTC+3:30, and so on. At sea it uses the military zone. *Military time zone* uses 15° longitude bands with no daylight saving. The setting only changes how times are shown: each night is always worked out at the selected location.
 - *Factor in terrain* (off by default; see Shadows and terrain).
 - Number of planning nights: 7 to 90.
 
 = Accuracy and limits
-Sun and moon positions follow Meeus, _Astronomical Algorithms_. Against NASA JPL's DE421 ephemeris (300 test nights at 10 sites from 55°S to 70°N), rise, set and twilight times typically agree within a few seconds, and moon illumination within 0.1 percentage point. The worst case is about a minute, on high-latitude nights when the sun barely dips below 12°. Illuminance uses the USNO Circular 171 model for a *clear sky*. Clouds, terrain masking, smoke, snow cover and city lights change real light levels. Illum supports planning and does not replace official SLAP (military solar/lunar almanac) data or weather products.
+Sun and moon positions follow Meeus, _Astronomical Algorithms_. Against NASA JPL's DE421 ephemeris (300 test nights at 10 sites from 55°S to 70°N), rise, set and twilight times typically agree within a few seconds, and moon illumination within 0.1 percentage point. The worst case is about a minute, on high-latitude nights when the sun barely dips below 12°. Time zones: within about 3 km of a time zone border, check which side you are on. Illuminance uses the USNO Circular 171 model for a *clear sky*. Clouds, terrain masking, smoke, snow cover and city lights change real light levels. Illum supports planning and does not replace official SLAP (military solar/lunar almanac) data or weather products.
 ]
 
 #tak-slide[
@@ -114,4 +114,5 @@ USAF and USN/USMC planning treats the ground as flat. Illum does the same by def
   [*DTED / SRTM*], [Digital Terrain Elevation Data / Shuttle Radar Topography Mission: terrain elevation data loaded in ATAK],
   [*Clears terrain*], [When the moon rises above the local skyline (terrain on)],
 )
+#text(size: 0.75em)[Time zone map: timezone-boundary-builder, data © OpenStreetMap contributors, Open Database License (ODbL) 1.0.]
 ]

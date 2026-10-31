@@ -90,15 +90,21 @@ public final class IllumPrefs {
     public static final double NEAR_SELF_MAX_DIFF_HOURS = 2;
 
     /**
-     * Zone used to show times for a point. The default ("auto") is the local
-     * time at the point: the device's own zone (daylight saving aware) when
-     * the point is near the device, otherwise the military time zone for the
-     * point's longitude. Zulu and a manual offset can be chosen instead.
+     * Zone used to show times for a point:
+     * <ul>
+     * <li>"auto" (default): civil local time at the point, from the offline
+     * time zone map with the device's daylight saving rules. Without the map
+     * (or at sea) it falls back to {@link #localAt}.</li>
+     * <li>"military": the military time zone for the longitude (no daylight
+     * saving).</li>
+     * <li>"zulu", or "manual" (a fixed offset).</li>
+     * </ul>
      *
      * @param selfLat device position, NaN if unknown
+     * @param map the time zone map, or null if unavailable
      */
     public static DisplayZone zone(Map<String, ?> p, double latDeg, double lonDeg,
-            double selfLat, double selfLon, TimeZone deviceZone, long nowUtc) {
+            double selfLat, double selfLon, TimeZone deviceZone, long nowUtc, TzMap map) {
         String z = str(p, TIME_ZONE, "auto");
         switch (z) {
             case "zulu":
@@ -107,9 +113,37 @@ public final class IllumPrefs {
                 double h = clamp(num(p, MANUAL_OFFSET, 0), -14, 14);
                 return DisplayZone.fixedMinutes((int) Math.round(h * 60));
             }
-            default: // "auto", and the 1.0 values "device" and "ao"
+            case "military":
+            case "ao": // 1.0
+                return DisplayZone.nautical(lonDeg);
+            default: { // "auto", and 1.0's "device"
+                TimeZone tz = civilZone(map, latDeg, lonDeg);
+                if (tz != null)
+                    return DisplayZone.localAtPoint(tz);
                 return localAt(latDeg, lonDeg, selfLat, selfLon, deviceZone, nowUtc);
+            }
         }
+    }
+
+    /** Without the map (unit tests and old callers). */
+    public static DisplayZone zone(Map<String, ?> p, double latDeg, double lonDeg,
+            double selfLat, double selfLon, TimeZone deviceZone, long nowUtc) {
+        return zone(p, latDeg, lonDeg, selfLat, selfLon, deviceZone, nowUtc, null);
+    }
+
+    /**
+     * The civil time zone at a point from the map, or null (no map, at sea,
+     * or a zone id this device's time zone database does not know).
+     */
+    public static TimeZone civilZone(TzMap map, double latDeg, double lonDeg) {
+        if (map == null)
+            return null;
+        String id = map.zoneAt(latDeg, lonDeg);
+        if (id == null || id.startsWith("Etc/"))
+            return null;
+        TimeZone tz = TimeZone.getTimeZone(id);
+        // unknown ids come back as "GMT"
+        return id.equals(tz.getID()) ? tz : null;
     }
 
     /** The local time zone at a point (see {@link #zone}). */
@@ -125,9 +159,16 @@ public final class IllumPrefs {
         return diffH <= NEAR_SELF_MAX_DIFF_HOURS ? DisplayZone.of(deviceZone) : mil;
     }
 
-    /** True for stored zone values from 1.0 that now mean "auto". */
-    public static boolean isLegacyZone(Object v) {
-        return "device".equals(v) || "ao".equals(v);
+    /**
+     * The current value for a stored 1.0 zone setting ("device" -> "auto",
+     * "ao" -> "military"), or null if the value is current.
+     */
+    public static String migrateZone(Object v) {
+        if ("device".equals(v))
+            return "auto";
+        if ("ao".equals(v))
+            return "military";
+        return null;
     }
 
     static double distanceMeters(double lat1, double lon1, double lat2, double lon2) {

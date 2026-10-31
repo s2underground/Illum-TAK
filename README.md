@@ -20,9 +20,9 @@ position, the map center, or a point or marker you tap) it shows:
   data loaded in ATAK to block moonlight while the moon is behind local
   terrain, and shows when the moon actually clears the skyline. The doctrine
   (flat terrain) rating is always shown alongside.
-- Times shown as local time at the selected point (labelled with the zone
-  letter, Zulu underneath), so planning a distant area never shows a
-  "sunset" in the morning
+- Times shown as local time at the selected point, including daylight
+  saving (offline world time zone map plus Android's time zone rules),
+  labelled with the military zone letter, Zulu underneath
 - A planning grid of 7 to 90 nights
 
 All data is computed on the device from astronomical formulas (Meeus,
@@ -35,6 +35,8 @@ Illum Preferences, or the Settings button in the pane.
 _________________________________________________________________
 STATUS
 
+1.1.1 (Oct 2026): local times include daylight saving (offline world time
+zone map); military time zone option; note on nights when clocks change.
 1.1 (Oct 2026): plain-language shadow outlook, optional terrain masking
 (beyond doctrine), and times shown in the local time of the selected point.
 1.0.1 (Oct 2026): fixes nights being cut short when the device's time zone is
@@ -97,4 +99,9 @@ ACKNOWLEDGMENTS
 - Illuminance model: P. M. Janiczek and J. A. DeYoung, "Computer Programs
   for Sun and Moon Illuminance", U.S. Naval Observatory Circular 171 (1987),
   public domain.
+- Time zone map (app/src/main/assets/tzmap.bin): derived from
+  timezone-boundary-builder by Evan Siroky (release 2026e), data (c)
+  OpenStreetMap contributors, available under the Open Database License
+  (ODbL) 1.0. tzmap.bin is made available under the ODbL 1.0 as well; it is
+  rebuilt with tools/tzmap/build_tzmap.py.
 - No third-party code or libraries are bundled in the plugin.

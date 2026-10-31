@@ -29,6 +29,7 @@ import com.atak.plugins.impl.PluginLayoutInflater;
 import com.atakmap.android.illum.plugin.R;
 import com.atakmap.android.illum.plugin.core.CivilDate;
 import com.atakmap.android.illum.plugin.core.DisplayZone;
+import com.atakmap.android.illum.plugin.core.TzMap;
 import com.atakmap.android.illum.plugin.core.Formats;
 import com.atakmap.android.illum.plugin.core.HorizonProfile;
 import com.atakmap.android.illum.plugin.core.ShadowOutlook;
@@ -106,7 +107,10 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     static final class Inputs {
         double lat, lon;
         PlanSettings settings;
+        /** Set on the compute thread (needs the time zone map). */
         DisplayZone zone;
+        Map<String, ?> prefs;
+        double selfLat, selfLon;
         long firstDay;
         int nights;
         long selectedDay;
@@ -465,8 +469,9 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         in.lon = lon;
         in.settings = IllumPrefs.settings(all);
         double[] self = selfPosition();
-        in.zone = IllumPrefs.zone(all, lat, lon, self[0], self[1], TimeZone.getDefault(),
-                System.currentTimeMillis());
+        in.prefs = all;
+        in.selfLat = self[0];
+        in.selfLon = self[1];
         in.nights = IllumPrefs.planNights(all);
         in.showZulu = IllumPrefs.showZulu(all);
         in.allTwilight = IllumPrefs.allTwilight(all);
@@ -506,6 +511,8 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
     Result compute(Inputs in) {
         Result r = new Result();
         r.in = in;
+        in.zone = IllumPrefs.zone(in.prefs, in.lat, in.lon, in.selfLat, in.selfLon,
+                TimeZone.getDefault(), System.currentTimeMillis(), tzMap());
         try {
             if (in.terrain) {
                 TerrainCache c = terrainCache;
@@ -545,6 +552,25 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         return r;
     }
 
+    private TzMap tzMap;
+    private boolean tzMapFailed;
+
+    /** The offline time zone map, loaded once on the compute thread. */
+    private TzMap tzMap() {
+        if (tzMap == null && !tzMapFailed) {
+            long t0 = android.os.SystemClock.elapsedRealtime();
+            try {
+                tzMap = TzMap.read(plugin.getAssets().open("tzmap.bin"));
+                Log.i(TAG, "time zone map: " + tzMap.zoneCount() + " zones in "
+                        + (android.os.SystemClock.elapsedRealtime() - t0) + " ms");
+            } catch (java.io.IOException | RuntimeException e) {
+                tzMapFailed = true;
+                Log.w(TAG, "time zone map unavailable; using military zones", e);
+            }
+        }
+        return tzMap;
+    }
+
     // ------------------------------------------------------------------
     // Render
     // ------------------------------------------------------------------
@@ -567,11 +593,12 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         };
     }
 
-    /** 1.0 offered "device" and "ao"; both now mean local time at the point. */
+    /** 1.0's "device" becomes "auto", and "ao" becomes "military". */
     private static void migrateZonePref(SharedPreferences prefs) {
         try {
-            if (IllumPrefs.isLegacyZone(prefs.getString(IllumPrefs.TIME_ZONE, null)))
-                prefs.edit().putString(IllumPrefs.TIME_ZONE, "auto").apply();
+            String now = IllumPrefs.migrateZone(prefs.getString(IllumPrefs.TIME_ZONE, null));
+            if (now != null)
+                prefs.edit().putString(IllumPrefs.TIME_ZONE, now).apply();
         } catch (RuntimeException e) {
             Log.w(TAG, "could not migrate the time zone setting", e);
         }
@@ -870,6 +897,9 @@ public final class IllumPane implements SharedPreferences.OnSharedPreferenceChan
         }
         DisplayZone z = in.zone;
         PlanSettings ps = in.settings;
+        String clocks = Formats.clockChange(n, z);
+        if (clocks != null)
+            sb.append(clocks);
         if (n.noNauticalDarkness)
             sb.append("• The sun never gets 12° below the horizon tonight: no EENT/BMNT.\n");
         else if (n.allNauticalDark)
