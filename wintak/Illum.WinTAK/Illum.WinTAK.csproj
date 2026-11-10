@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <UseWPF>true</UseWPF><PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>S2U.Illum.WinTAK</AssemblyName><RootNamespace>Illum.WinTAK</RootNamespace>
+    <Version>1.0.0</Version><AssemblyVersion>1.0.0.0</AssemblyVersion><FileVersion>1.0.0.0</FileVersion>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Illum.Core/Illum.Core.csproj" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="WinTak.Framework"><HintPath>$(WinTakDir)/WinTak.Framework.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Common"><HintPath>$(WinTakDir)/WinTak.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Display"><HintPath>$(WinTakDir)/WinTak.Display.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Graphics"><HintPath>$(WinTakDir)/WinTak.Graphics.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Mapping"><HintPath>$(WinTakDir)/WinTak.Mapping.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TAK.Engine"><HintPath>$(WinTakDir)/TAK.Engine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MapEngine.Interop"><HintPath>$(WinTakDir)/MapEngine.Interop.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="../../app/src/main/res/drawable/ic_launcher.png" Link="Assets/Illum.png" />
+    <None Include="../THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="CheckWinTakSdk" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(WinTakDir)/WinTak.Framework.dll')" Text="Install the WinTAK 5.8.0.149 SDK or pass -p:WinTakDir=your-install-directory." />
+  </Target>
+</Project>

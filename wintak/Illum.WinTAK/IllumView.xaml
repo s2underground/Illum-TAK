@@ -1,0 +1,132 @@
+<UserControl x:Class="Illum.WinTAK.IllumView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Illum.WinTAK" MinWidth="300"
+ Background="{DynamicResource IllumPanel}" Foreground="{DynamicResource IllumText}" PreviewKeyDown="PanePreviewKeyDown" DataContextChanged="PaneDataContextChanged" Unloaded="PaneUnloaded" Loaded="PaneLoaded" SizeChanged="PaneSizeChanged">
+ <UserControl.Resources><ResourceDictionary>
+  <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="IllumTheme.xaml"/></ResourceDictionary.MergedDictionaries>
+ </ResourceDictionary></UserControl.Resources>
+ <Grid>
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <Border x:Name="PickIndicator" Background="#314B59" BorderBrush="{StaticResource IllumAccent}" BorderThickness="1" Padding="8" Margin="12,5,12,7">
+   <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsPicking}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
+   <StackPanel><TextBlock Text="Select a point or marker on the map" FontWeight="Bold"/><TextBlock Text="Esc or Cancel pick returns to normal map interaction."/><Button Content="Cancel pick" Command="{Binding CancelPickCommand}" HorizontalAlignment="Left"/></StackPanel>
+  </Border>
+ <ScrollViewer x:Name="ReportScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" CanContentScroll="False" RequestBringIntoView="ReportBringIntoView" PreviewMouseWheel="ReportMouseWheel">
+  <StackPanel x:Name="PaneContent" Margin="12">
+   <TextBlock Text="ILLUM" FontSize="24" FontWeight="Bold"/>
+   <TextBlock Text="Night light planning · offline" Opacity="0.75"/>
+   <WrapPanel>
+    <Button Content="My position" Command="{Binding GpsCommand}" ToolTip="Use a snapshot of your GPS position (Alt+P)"/>
+    <Button Content="Map center" Command="{Binding CenterCommand}" ToolTip="Use the center of the WinTAK map (Alt+M)"/>
+    <Button Content="{Binding PickLabel}" Command="{Binding PickCommand}" ToolTip="Pick a point or marker (Alt+K). Esc cancels picking."/>
+   </WrapPanel>
+   <TextBlock Text="{Binding LocationSummary}" AutomationProperties.Name="Selected location"/>
+   <WrapPanel>
+    <StackPanel Width="165" Margin="0,0,6,0"><Label Content="Latitude (decimal degrees)" Target="{Binding ElementName=LatitudeInput}"/><TextBox x:Name="LatitudeInput" Tag="Latitude" Text="{Binding Latitude, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=LatitudeInput, Path=(Validation.Errors)}"/></StackPanel>
+    <StackPanel Width="165" Margin="0,0,6,0"><Label Content="Longitude (decimal degrees)" Target="{Binding ElementName=LongitudeInput}"/><TextBox x:Name="LongitudeInput" Tag="Longitude" Text="{Binding Longitude, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=LongitudeInput, Path=(Validation.Errors)}"/></StackPanel>
+   </WrapPanel>
+   <WrapPanel>
+    <StackPanel Width="165" Margin="0,0,6,0"><Label Content="First evening" Target="{Binding ElementName=FirstDateInput}"/><DatePicker x:Name="FirstDateInput" Tag="FirstDate" SelectedDate="{Binding FirstDate, ValidatesOnNotifyDataErrors=True}" DisplayDateStart="1900-01-01" DisplayDateEnd="2100-12-31" DateValidationError="DateValidationError" Margin="0,3,6,3"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=FirstDateInput, Path=(Validation.Errors)}"/></StackPanel>
+    <StackPanel Width="100"><Label Content="Nights (7–90)" Target="{Binding ElementName=NightsInput}"/><TextBox x:Name="NightsInput" Tag="Nights" Text="{Binding Nights, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=NightsInput, Path=(Validation.Errors)}"/></StackPanel>
+   </WrapPanel>
+   <WrapPanel><Button Content="Previous night" Command="{Binding PreviousNightCommand}"/><Button Content="Tonight" Command="{Binding TonightCommand}"/><Button Content="Next night" Command="{Binding NextNightCommand}"/></WrapPanel>
+   <WrapPanel>
+    <StackPanel Width="150"><Label Content="Light standard" Target="{Binding ElementName=StandardInput}"/><ComboBox x:Name="StandardInput" Tag="StandardIndex" ItemsSource="{Binding Standards}" SelectedIndex="{Binding StandardIndex, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=StandardInput, Path=(Validation.Errors)}"/></StackPanel>
+    <StackPanel Width="150"><Label Content="Mission" Target="{Binding ElementName=MissionInput}"/><ComboBox x:Name="MissionInput" Tag="MissionIndex" ItemsSource="{Binding Missions}" SelectedIndex="{Binding MissionIndex, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=MissionInput, Path=(Validation.Errors)}"/></StackPanel>
+    <StackPanel Width="150"><Label Content="Sky" Target="{Binding ElementName=SkyInput}"/><ComboBox x:Name="SkyInput" Tag="SkyIndex" ItemsSource="{Binding Skies}" SelectedIndex="{Binding SkyIndex, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=SkyInput, Path=(Validation.Errors)}"/></StackPanel>
+   </WrapPanel>
+   <WrapPanel>
+    <StackPanel Width="150"><Label Content="Rated window" Target="{Binding ElementName=WindowInput}"/><ComboBox x:Name="WindowInput" Tag="WindowIndex" ItemsSource="{Binding Windows}" SelectedIndex="{Binding WindowIndex, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=WindowInput, Path=(Validation.Errors)}"/></StackPanel>
+    <StackPanel Width="200"><Label Content="Time zone" Target="{Binding ElementName=ZoneInput}"/><ComboBox x:Name="ZoneInput" Tag="ZoneIndex" ItemsSource="{Binding Zones}" SelectedIndex="{Binding ZoneIndex, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=ZoneInput, Path=(Validation.Errors)}"/></StackPanel>
+   </WrapPanel>
+   <Expander x:Name="CustomOptions" Header="Custom values and display options" IsExpanded="{Binding CustomOptionsExpanded, Mode=TwoWay}" Margin="0,6">
+    <StackPanel>
+     <TextBlock Text="Custom standard values apply when Light standard is Custom. Clock times use the selected time zone and apply to the Custom rated window."/>
+     <WrapPanel>
+      <StackPanel Width="200"><Label Content="Custom rule" Target="{Binding ElementName=MethodInput}"/><ComboBox x:Name="MethodInput" Tag="CustomMethodIndex" ItemsSource="{Binding Methods}" SelectedIndex="{Binding CustomMethodIndex, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=MethodInput, Path=(Validation.Errors)}"/></StackPanel>
+      <StackPanel Width="135"><Label Content="Threshold (millilux)" Target="{Binding ElementName=LuxInput}"/><TextBox x:Name="LuxInput" Tag="CustomMillilux" Text="{Binding CustomMillilux, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=LuxInput, Path=(Validation.Errors)}"/></StackPanel>
+      <StackPanel Width="150"><Label Content="Moon illumination (%)" Target="{Binding ElementName=PercentInput}"/><TextBox x:Name="PercentInput" Tag="CustomPercent" Text="{Binding CustomPercent, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=PercentInput, Path=(Validation.Errors)}"/></StackPanel>
+      <StackPanel Width="135"><Label Content="Moon elevation (°)" Target="{Binding ElementName=AltitudeInput}"/><TextBox x:Name="AltitudeInput" Tag="CustomAltitude" Text="{Binding CustomAltitude, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=AltitudeInput, Path=(Validation.Errors)}"/></StackPanel>
+     </WrapPanel>
+     <WrapPanel>
+      <StackPanel Width="110"><Label Content="Start (HH:mm)" Target="{Binding ElementName=StartInput}"/><TextBox x:Name="StartInput" Tag="CustomStart" Text="{Binding CustomStart, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=StartInput, Path=(Validation.Errors)}"/></StackPanel>
+      <StackPanel Width="110"><Label Content="End (HH:mm)" Target="{Binding ElementName=EndInput}"/><TextBox x:Name="EndInput" Tag="CustomEnd" Text="{Binding CustomEnd, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=EndInput, Path=(Validation.Errors)}"/></StackPanel>
+      <StackPanel Width="150"><Label Content="Mixed tolerance (%)" Target="{Binding ElementName=ToleranceInput}"/><TextBox x:Name="ToleranceInput" Tag="TolerancePercent" Text="{Binding TolerancePercent, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=ToleranceInput, Path=(Validation.Errors)}"/></StackPanel>
+      <StackPanel Width="220"><Label Content="Manual UTC offset (minutes)" Target="{Binding ElementName=OffsetInput}"/><TextBox x:Name="OffsetInput" Tag="ManualOffset" Text="{Binding ManualOffset, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/><ItemsControl Style="{StaticResource IllumErrors}" ItemsSource="{Binding ElementName=OffsetInput, Path=(Validation.Errors)}"/></StackPanel>
+     </WrapPanel>
+     <CheckBox Content="Show Zulu alongside local times" IsChecked="{Binding ShowZulu}" Margin="0,5"/>
+     <CheckBox Content="Include night sky (stars and airglow)" IsChecked="{Binding IncludeNightSky}" Margin="0,5"/>
+    </StackPanel>
+   </Expander>
+   <CheckBox Content="Factor in terrain (beyond doctrine)" IsChecked="{Binding Terrain}" Margin="0,5"/>
+   <Button Content="Calculate plan" Click="CalculateClicked" HorizontalAlignment="Left" ToolTip="Calculate with current settings (Alt+C or Ctrl+Enter). Enter also works in numeric fields."/>
+   <TextBlock Text="{Binding Status}" AutomationProperties.Name="Calculation status" AutomationProperties.LiveSetting="Polite"/>
+   <TextBlock Text="{Binding ZoneDescription}" Opacity="0.8"/>
+   <Border x:Name="ReportBanner" Height="152" Background="{Binding RatingBrush}" Padding="10" Margin="0,8" CornerRadius="3" Focusable="True" KeyboardNavigation.IsTabStop="False" AutomationProperties.Name="Selected night report">
+    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+     <local:MoonPhaseView Report="{Binding SelectedReport}" Width="52" Height="52" Margin="0,0,8,0"/>
+     <ScrollViewer x:Name="BannerScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="DetailMouseWheel" VerticalAlignment="Center" AutomationProperties.Name="Night summary"><StackPanel>
+      <TextBlock Text="{Binding Headline}" Foreground="White" FontWeight="Bold" FontSize="16"/>
+      <TextBlock Text="{Binding MoonSummary}" Foreground="White"/>
+      <TextBlock Text="{Binding BannerSummary}" Foreground="White" FontSize="12"/>
+     </StackPanel></ScrollViewer>
+    </Grid>
+   </Border>
+   <ScrollViewer x:Name="KeyTimesScroll" Height="320" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="DetailMouseWheel" Margin="0,6,0,0" AutomationProperties.Name="Key event times">
+   <ItemsControl ItemsSource="{Binding KeyTimes}">
+    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate><DataTemplate>
+     <Border Background="#15212B" BorderBrush="#4B6070" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,6,6">
+      <StackPanel><TextBlock Text="{Binding Name}" Foreground="{StaticResource IllumMuted}" FontSize="11"/><TextBlock Text="{Binding Value}" FontSize="14"/></StackPanel>
+     </Border>
+    </DataTemplate></ItemsControl.ItemTemplate>
+   </ItemsControl>
+   </ScrollViewer>
+   <TextBlock Text="Night timeline" FontWeight="Bold" Margin="0,8,0,3"/>
+   <local:TimelineView x:Name="NightTimeline" Report="{Binding SelectedReport}" Zone="{Binding DisplayZone}" Settings="{Binding SelectedSettings}" Height="240"/>
+   <TextBlock Text="White: light (log scale) · Blue: moon elevation · Dashed: lux threshold. Top strip: moon visible (dim when terrain hides it). Bottom strip: mission rating. Cyan: rated window." Foreground="{StaticResource IllumMuted}" FontSize="11"/>
+   <Expander x:Name="TwilightDetails" Header="All twilight times and HLL intervals" IsExpanded="{Binding TwilightExpanded, Mode=TwoWay}" Margin="0,7"><ScrollViewer x:Name="TwilightScroll" Height="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="DetailMouseWheel" AutomationProperties.Name="All twilight details"><TextBlock Text="{Binding Detail}" FontFamily="Consolas"/></ScrollViewer></Expander>
+   <TextBlock Text="Shadow outlook" FontWeight="Bold"/>
+   <Border x:Name="ShadowNotesArea" Height="224" BorderBrush="#4B6070" BorderThickness="1" Background="#15212B" CornerRadius="3" Padding="8">
+    <Grid><Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <TextBlock Text="{Binding ShadowSummary}" FontWeight="SemiBold"/>
+     <ScrollViewer x:Name="ShadowScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="DetailMouseWheel" AutomationProperties.Name="Shadow intervals and notes"><StackPanel>
+      <TextBlock Text="{Binding ShadowIntervals}"/>
+      <TextBlock Text="{Binding Notes}" Foreground="{StaticResource IllumMuted}"/>
+      <TextBlock Text="{Binding Doctrine}"/>
+      <TextBlock Text="{Binding StandardReference}" FontStyle="Italic" Opacity="0.8"/>
+     </StackPanel></ScrollViewer>
+    </Grid>
+   </Border>
+   <TextBlock Text="Planning grid" FontWeight="Bold" Margin="0,12,0,2"/>
+   <TextBlock Text="Arrow keys select nights. Enter or double-click opens the report above. Tab leaves the grid." FontSize="11" Foreground="{StaticResource IllumMuted}"/>
+   <DataGrid x:Name="PlanningGrid" Width="{Binding ActualWidth, ElementName=PaneContent}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" AutoGenerateColumns="False" IsReadOnly="True" EnableColumnVirtualization="False"
+     CanUserAddRows="False" CanUserResizeColumns="False" CanUserReorderColumns="False" SelectionMode="Single" SelectionUnit="FullRow" MinColumnWidth="0"
+     HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" KeyboardNavigation.TabNavigation="Once"
+     PreviewKeyDown="GridPreviewKeyDown" PreviewMouseWheel="GridMouseWheel" MouseDoubleClick="GridDoubleClick" AutomationProperties.Name="Night planning grid">
+    <DataGrid.RowStyle><Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}"><EventSetter Event="RequestBringIntoView" Handler="ReportBringIntoView"/></Style></DataGrid.RowStyle>
+    <DataGrid.Columns>
+     <DataGridTextColumn Header="Evening" Binding="{Binding Date}" Width="1.4*" SortMemberPath="EpochDay"/>
+     <DataGridTemplateColumn Header="Light" Width="1*" SortMemberPath="LightSort"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+      <Border Background="{Binding RatingBrush}" CornerRadius="2" Padding="3,2"><TextBlock Text="{Binding Level}" Foreground="White" Margin="0" FontSize="11" TextWrapping="NoWrap" HorizontalAlignment="Center"/></Border>
+     </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+     <DataGridTextColumn Header="HLL %" Binding="{Binding Hll}" Width="0.8*" SortMemberPath="HllFraction"/>
+     <DataGridTemplateColumn Header="Moon" Width="1.2*" SortMemberPath="IllumPercent"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+      <Grid ToolTip="{Binding Moon}"><Grid.ColumnDefinitions><ColumnDefinition Width="22"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+       <local:MoonPhaseView Report="{Binding Report}" Width="20" Height="20"/>
+       <TextBlock Grid.Column="1" Text="{Binding Illumination}" Margin="3,0,0,0" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+      </Grid>
+     </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+    </DataGrid.Columns>
+   </DataGrid>
+   <Button Content="Back to selected report" Click="OpenReportClicked" HorizontalAlignment="Left" ToolTip="Show details of the selected night (Alt+R)"/>
+   <Expander Header="Abbreviations and keyboard help" IsExpanded="{Binding LegendExpanded, Mode=TwoWay}" Margin="0,9">
+    <StackPanel>
+     <TextBlock Text="HLL / LLL: high / low light level. EENT / BMNT: end / beginning of nautical twilight (Sun 12° below the horizon). SS / SR: sunset / sunrise. MR / MS: moonrise / moonset. Moon graphics show waxing/waning and are mirrored in the southern hemisphere. Green favors the selected mission; darkness favors concealment, light favors NVG / aviation."/>
+     <TextBlock Text="Tab / Shift+Tab: move between controls. Arrow keys, Home / End and Page Up / Down: navigate the grid. Enter in the grid: open the selected report. Enter in numeric fields or Ctrl+Enter: calculate. Alt+C: calculate. Alt+P / M / K: GPS / map center / pick. Esc: cancel map picking."/>
+    </StackPanel>
+   </Expander>
+   <TextBlock Text="Clear-sky astronomical estimate, adjusted by the selected sky factor. Terrain accounts for bare ground only; partial coverage leaves unknown directions flat. Check weather and unit procedures." FontSize="11" Opacity="0.7" Margin="0,12,0,4"/>
+  </StackPanel>
+ </ScrollViewer>
+ </Grid>
+</UserControl>

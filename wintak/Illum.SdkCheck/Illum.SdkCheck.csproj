@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup><UseWPF>true</UseWPF><OutputType>Exe</OutputType><PlatformTarget>x64</PlatformTarget><AssemblyName>Illum.SdkCheck</AssemblyName><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects><GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Illum.WinTAK/Illum.WinTAK.csproj" />
+    <Reference Include="WinTak.Framework"><HintPath>$(WinTakDir)/WinTak.Framework.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Common"><HintPath>$(WinTakDir)/WinTak.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Display"><HintPath>$(WinTakDir)/WinTak.Display.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Mapping"><HintPath>$(WinTakDir)/WinTak.Mapping.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="WinTak.Graphics"><HintPath>$(WinTakDir)/WinTak.Graphics.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TAK.Engine"><HintPath>$(WinTakDir)/TAK.Engine.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

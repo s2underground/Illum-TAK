@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <WinTakDir Condition="'$(WinTakDir)' == ''">$(ProgramW6432)\WinTAK</WinTakDir>
+    <RestorePackagesPath>$(MSBuildThisFileDirectory).packages</RestorePackagesPath>
+    <RestoreSources>$(WinTakDir)\NuGet;https://api.nuget.org/v3/index.json</RestoreSources>
+  </PropertyGroup>
+</Project>
