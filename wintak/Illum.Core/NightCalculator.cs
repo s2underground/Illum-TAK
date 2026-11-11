@@ -1,0 +1,500 @@
+// Ported from the corresponding Android core class; formulas and field names retained for comparison.
+using System;
+using System.Collections.Generic;
+
+namespace Illum.Core
+{
+/**
+ * Builds {@link NightReport}s: twilight and rise/set times, moon data and the
+ * HLL/LLL stoplight for a rated window.
+ *
+ * Event conventions (same as USNO):
+ * <ul>
+ * <li>Sunrise/sunset: Sun's upper limb on the horizon with standard refraction
+ * (center 0.833 deg below the horizon).</li>
+ * <li>Civil / nautical / astronomical twilight: Sun's center 6 / 12 / 18 deg
+ * below the horizon. EENT/BMNT are the nautical ones.</li>
+ * <li>Moonrise/moonset: Moon's upper limb on the horizon, topocentric, with
+ * standard refraction (34').</li>
+ * </ul>
+ */
+public sealed class NightCalculator {
+
+    internal static readonly double SUN_RISESET = -0.8333;
+    internal static readonly double CIVIL = -6.0;
+    internal static readonly double NAUTICAL = -12.0;
+    internal static readonly double ASTRONOMICAL = -18.0;
+    internal static readonly double REFRACTION = 0.5667;
+
+    private NightCalculator() {
+    }
+
+    /** Height of the Moon's center (topocentric, geometric) at rise/set. */
+    internal static double moonHorizon(double parallaxDeg) {
+        return -REFRACTION - 0.2725 * parallaxDeg;
+    }
+
+    /**
+     * The time frame a night is computed in: noon to noon in the nautical
+     * time zone of the LOCATION (its longitude), never the display zone.
+     * This guarantees the whole night (sunset to sunrise) at the location is
+     * inside the frame whatever time zone the device is set to.
+     */
+    public static DisplayZone frameFor(double lonDeg) {
+        return DisplayZone.nautical(lonDeg);
+    }
+
+    /** The night (evening date at the location) whose noon-to-noon frame contains an instant. */
+    public static long nightOf(long utcMillis, double lonDeg) {
+        return CivilDate.epochDayOf(utcMillis - 12 * 3600000L, frameFor(lonDeg));
+    }
+
+    /** Compute one night on flat terrain (doctrine). */
+    public static NightReport compute(double latDeg, double lonDeg, long epochDay,
+            DisplayZone zone, PlanSettings settings) {
+        return compute(latDeg, lonDeg, epochDay, zone, settings, null);
+    }
+
+    /**
+     * Compute one night. With a horizon profile, moonlight is blocked while the
+     * moon is behind the local terrain; the doctrine (flat) rating is kept in
+     * the doctrine* fields.
+     */
+    public static NightReport compute(double latDeg, double lonDeg, long epochDay,
+            DisplayZone zone, PlanSettings settings, HorizonProfile horizon) {
+        NightReport r = new NightReport();
+        r.latDeg = latDeg;
+        r.lonDeg = lonDeg;
+        r.epochDay = epochDay;
+        // Frame by the location, not the display zone (see frameFor).
+        DisplayZone frame = frameFor(lonDeg);
+        r.spanStart = CivilDate.localToUtc(epochDay, 12 * 60, frame);
+        r.spanEnd = CivilDate.localToUtc(epochDay + 1, 12 * 60, frame);
+
+        long step = settings.sampleMinutes * 60000L;
+        int n = (int) ((r.spanEnd - r.spanStart) / step) + 1;
+        r.sampleStep = step;
+        r.sampleLux = new float[n];
+        r.sampleSunAlt = new float[n];
+        r.sampleMoonAlt = new float[n];
+        r.sampleHll = new bool[n];
+        r.sampleMoonVisible = new bool[n];
+        double[] sunAlt = new double[n];
+        double[] moonF = new double[n]; // moon altitude minus its rise/set height
+        double[] moonT = horizon != null ? new double[n] : null; // clearance over terrain
+
+        for (int i = 0; i < n; i++) {
+            long t = r.sampleTime(i);
+            SkyState s = Ephemeris.compute(t, latDeg, lonDeg);
+            bool visible = moonClearance(s, horizon) >= 0;
+            Lux light = lux(s, settings, horizon, visible);
+            sunAlt[i] = s.sunAltDeg;
+            moonF[i] = s.moonAltDeg - moonHorizon(s.moonParallaxDeg);
+            if (moonT != null)
+                moonT[i] = moonClearance(s, horizon);
+            r.sampleSunAlt[i] = (float) s.sunAltDeg;
+            r.sampleMoonAlt[i] = (float) s.moonAltDeg;
+            r.sampleLux[i] = (float) light.total;
+            r.sampleMoonVisible[i] = visible;
+            r.sampleHll[i] = settings.standard.isHighLight(light.total, light.sun,
+                    effectiveMoonAlt(s, horizon, visible), s.illumPercent());
+        }
+
+        sunEvents(r, sunAlt, latDeg, lonDeg);
+        moonEvents(r, moonF, latDeg, lonDeg);
+        if (horizon != null)
+            r.terrainMoonEvents = terrainMoonEvents(r, moonT, latDeg, lonDeg, horizon);
+        window(r, zone, settings);
+        rate(r, latDeg, lonDeg, settings, horizon);
+        r.terrainApplied = horizon != null;
+        if (horizon != null) {
+            // doctrine result on flat terrain, for side-by-side display
+            NightReport flat = new NightReport();
+            flat.windowStart = r.windowStart;
+            flat.windowEnd = r.windowEnd;
+            flat.sampleStep = r.sampleStep;
+            flat.spanStart = r.spanStart;
+            flat.spanEnd = r.spanEnd;
+            rate(flat, latDeg, lonDeg, settings, null);
+            r.doctrineLevel = flat.level;
+            r.doctrineRating = flat.rating;
+            r.doctrineHllFraction = flat.hllFraction;
+        } else {
+            r.doctrineLevel = r.level;
+            r.doctrineRating = r.rating;
+            r.doctrineHllFraction = r.hllFraction;
+        }
+        return r;
+    }
+
+    /**
+     * How far (degrees) the moon's upper edge is above the horizon that
+     * blocks it: the flat horizon with standard refraction, or the terrain
+     * skyline. Visible when &gt;= 0.
+     */
+    internal static double moonClearance(SkyState s, HorizonProfile horizon) {
+        if (horizon == null)
+            return s.moonAltDeg - moonHorizon(s.moonParallaxDeg);
+        double sky = horizon.altitudeAt(s.moonAzDeg);
+        return s.moonAltDeg + 0.2725 * s.moonParallaxDeg + refraction(sky) - sky;
+    }
+
+    /** Refraction at a given apparent altitude, scaled to 34' at the horizon (Bennett). */
+    internal static double refraction(double altDeg) {
+        double h = Math.Max(-1.0, altDeg);
+        double r = 1.0 / Math.Tan(JavaMath.toRadians(h + 7.31 / (h + 4.4)));
+        double r0 = 1.0 / Math.Tan(JavaMath.toRadians(7.31 / 4.4));
+        return REFRACTION * r / r0;
+    }
+
+    /** Moon altitude as the light rules should see it: hidden counts as down. */
+    internal static double effectiveMoonAlt(SkyState s, HorizonProfile horizon, bool visible) {
+        return horizon != null && !visible ? -90 : s.moonAltDeg;
+    }
+
+    /** Compute consecutive nights, optionally with terrain. */
+    public static List<NightReport> range(double latDeg, double lonDeg, long firstEpochDay,
+            int nights, DisplayZone zone, PlanSettings settings, HorizonProfile horizon) {
+        List<NightReport> output = new List<NightReport>(nights);
+        for (int i = 0; i < nights; i++)
+            output.Add(compute(latDeg, lonDeg, firstEpochDay + i, zone, settings, horizon));
+        return output;
+    }
+
+    /** Compute consecutive nights starting at a local date. */
+    public static List<NightReport> range(double latDeg, double lonDeg, long firstEpochDay,
+            int nights, DisplayZone zone, PlanSettings settings) {
+        List<NightReport> output = new List<NightReport>(nights);
+        for (int i = 0; i < nights; i++)
+            output.Add(compute(latDeg, lonDeg, firstEpochDay + i, zone, settings));
+        return output;
+    }
+
+    // ------------------------------------------------------------------
+    // Illuminance for a sample
+    // ------------------------------------------------------------------
+
+    internal sealed class Lux {
+        internal double sun, moon, total;
+    }
+
+    internal static Lux lux(SkyState s, PlanSettings settings) {
+        return lux(s, settings, null, true);
+    }
+
+    internal static Lux lux(SkyState s, PlanSettings settings, HorizonProfile horizon,
+            bool moonVisible) {
+        Lux l = new Lux();
+        double div = settings.sky.divisor;
+        l.sun = Illuminance.sunLux(s) / div;
+        // behind terrain: no direct moonlight at this spot
+        l.moon = horizon != null && !moonVisible ? 0.0 : Illuminance.moonLux(s) / div;
+        l.total = l.sun + l.moon
+                + (settings.includeNightSky ? Illuminance.NIGHT_SKY_LUX / div : 0.0);
+        return l;
+    }
+
+    // ------------------------------------------------------------------
+    // Sun
+    // ------------------------------------------------------------------
+
+    private static void sunEvents(NightReport r, double[] alt, double lat, double lon) {
+        r.sunset = firstCrossing(r, alt, SUN_RISESET, false, r.spanStart, lat, lon);
+        r.eect = firstCrossing(r, alt, CIVIL, false, r.spanStart, lat, lon);
+        r.eent = firstCrossing(r, alt, NAUTICAL, false, r.spanStart, lat, lon);
+        r.eeat = firstCrossing(r, alt, ASTRONOMICAL, false, r.spanStart, lat, lon);
+        r.bmat = firstCrossing(r, alt, ASTRONOMICAL, true, after(r.eeat, r.spanStart), lat, lon);
+        r.bmnt = firstCrossing(r, alt, NAUTICAL, true, after(r.eent, r.spanStart), lat, lon);
+        r.bmct = firstCrossing(r, alt, CIVIL, true, after(r.eect, r.spanStart), lat, lon);
+        r.sunrise = firstCrossing(r, alt, SUN_RISESET, true, after(r.sunset, r.spanStart),
+                lat, lon);
+
+        bool anyBelowNautical = false, allBelowNautical = true;
+        bool anyBelowHorizon = false, allBelowHorizon = true;
+        foreach (double a in alt) {
+            if (a < NAUTICAL)
+                anyBelowNautical = true;
+            else
+                allBelowNautical = false;
+            if (a < SUN_RISESET)
+                anyBelowHorizon = true;
+            else
+                allBelowHorizon = false;
+        }
+        r.noNauticalDarkness = !anyBelowNautical;
+        r.allNauticalDark = allBelowNautical;
+        r.sunUpAllSpan = !anyBelowHorizon;
+        r.sunDownAllSpan = allBelowHorizon;
+    }
+
+    private static long after(long t, long fallback) {
+        return t == NightReport.NONE ? fallback : t;
+    }
+
+    /**
+     * First crossing of the sun's altitude through a level, in the given
+     * direction, at or after a time. Refined by bisection to about a second.
+     */
+    private static long firstCrossing(NightReport r, double[] alt, double level, bool rising,
+            long notBefore, double lat, double lon) {
+        for (int i = 0; i + 1 < alt.Length; i++) {
+            if (r.sampleTime(i + 1) < notBefore)
+                continue;
+            double a = alt[i] - level, b = alt[i + 1] - level;
+            bool hit = rising ? (a < 0 && b >= 0) : (a >= 0 && b < 0);
+            if (!hit)
+                continue;
+            long lo = r.sampleTime(i), hi = r.sampleTime(i + 1);
+            for (int k = 0; k < 14; k++) {
+                long mid = (lo + hi) >> 1;
+                double m = Ephemeris.sunAltitude(mid, lat, lon) - level;
+                bool midBelow = m < 0;
+                // rising: below -> above. setting: above -> below.
+                if (rising == midBelow)
+                    lo = mid;
+                else
+                    hi = mid;
+            }
+            long t = (lo + hi) >> 1;
+            if (t >= notBefore)
+                return t;
+        }
+        return NightReport.NONE;
+    }
+
+    // ------------------------------------------------------------------
+    // Moon
+    // ------------------------------------------------------------------
+
+    private static void moonEvents(NightReport r, double[] f, double lat, double lon) {
+        List<NightReport.MoonEvent> ev = new List<NightReport.MoonEvent>();
+        for (int i = 0; i + 1 < f.Length; i++) {
+            double a = f[i], b = f[i + 1];
+            bool rise = a < 0 && b >= 0;
+            bool set = a >= 0 && b < 0;
+            if (!rise && !set)
+                continue;
+            long lo = r.sampleTime(i), hi = r.sampleTime(i + 1);
+            SkyState s = null;
+            for (int k = 0; k < 14; k++) {
+                long mid = (lo + hi) >> 1;
+                s = Ephemeris.compute(mid, lat, lon);
+                bool midBelow = s.moonAltDeg - moonHorizon(s.moonParallaxDeg) < 0;
+                if (rise == midBelow)
+                    lo = mid;
+                else
+                    hi = mid;
+            }
+            long t = (lo + hi) >> 1;
+            s = Ephemeris.compute(t, lat, lon);
+            ev.Add(new NightReport.MoonEvent(t, rise, s.moonAzDeg));
+        }
+        r.moonEvents = ev;
+        if (ev.Count == 0) {
+            r.moonUpAllSpan = f[0] >= 0;
+            r.moonDownAllSpan = f[0] < 0;
+        }
+    }
+
+    /** Moon clearing / dropping behind the terrain skyline. */
+    private static List<NightReport.MoonEvent> terrainMoonEvents(NightReport r, double[] g,
+            double lat, double lon, HorizonProfile horizon) {
+        List<NightReport.MoonEvent> ev = new List<NightReport.MoonEvent>();
+        for (int i = 0; i + 1 < g.Length; i++) {
+            double a = g[i], b = g[i + 1];
+            bool rise = a < 0 && b >= 0;
+            bool set = a >= 0 && b < 0;
+            if (!rise && !set)
+                continue;
+            long lo = r.sampleTime(i), hi = r.sampleTime(i + 1);
+            for (int k = 0; k < 14; k++) {
+                long mid = (lo + hi) >> 1;
+                bool midBelow = moonClearance(Ephemeris.compute(mid, lat, lon), horizon) < 0;
+                if (rise == midBelow)
+                    lo = mid;
+                else
+                    hi = mid;
+            }
+            long t = (lo + hi) >> 1;
+            ev.Add(new NightReport.MoonEvent(t, rise, Ephemeris.compute(t, lat, lon).moonAzDeg));
+        }
+        return ev;
+    }
+
+    // ------------------------------------------------------------------
+    // Rated window
+    // ------------------------------------------------------------------
+
+    private static void window(NightReport r, DisplayZone zone, PlanSettings ps) {
+        switch (ps.windowMode) {
+            case PlanSettings.WindowMode.CUSTOM: {
+                // Clock times are in the display zone. Use the occurrence whose
+                // middle is closest to the middle of this night's frame (about
+                // local midnight at the location), so the window always belongs
+                // to this night whatever the device's time zone.
+                long mid = r.spanStart + (r.spanEnd - r.spanStart) / 2;
+                long zDay = CivilDate.epochDayOf(mid, zone);
+                long best = NightReport.NONE, bestEnd = NightReport.NONE;
+                for (int k = -2; k <= 2; k++) {
+                    long s = CivilDate.localToUtc(zDay + k, ps.customStartMin, zone);
+                    long endDay=zDay+k+(ps.customEndMin<=ps.customStartMin?1:0);
+                    long e = CivilDate.localToUtc(endDay, ps.customEndMin, zone);
+                    if (best == NightReport.NONE
+                            || Math.Abs(s + (e-s)/2 - mid) < Math.Abs(best + (bestEnd-best)/2 - mid)) {
+                        best = s; bestEnd=e;
+                    }
+                }
+                r.windowStart = best;
+                r.windowEnd = bestEnd;
+                r.windowLabel = "Custom";
+                break;
+            }
+            case PlanSettings.WindowMode.SUNSET_SUNRISE:
+                darkWindow(r, r.sunset, r.sunrise, r.sunDownAllSpan, r.sunUpAllSpan);
+                r.windowLabel = "Sunset–Sunrise";
+                break;
+            case PlanSettings.WindowMode.NAUTICAL_DARK:
+            default:
+                darkWindow(r, r.eent, r.bmnt, r.allNauticalDark, r.noNauticalDarkness);
+                r.windowLabel = "EENT–BMNT";
+                break;
+        }
+    }
+
+    private static void darkWindow(NightReport r, long start, long end, bool allDark,
+            bool neverDark) {
+        if (neverDark)
+            return;
+        if (allDark) {
+            r.windowStart = r.spanStart;
+            r.windowEnd = r.spanEnd;
+            return;
+        }
+        // already dark at noon (polar edge): start at span start
+        r.windowStart = start != NightReport.NONE ? start : r.spanStart;
+        r.windowEnd = end != NightReport.NONE ? end : r.spanEnd;
+    }
+
+    private static void rate(NightReport r, double lat, double lon, PlanSettings ps,
+            HorizonProfile horizon) {
+        // Reference time for "tonight's illumination": window middle, else local midnight.
+        r.refTime = r.hasWindow() ? r.windowStart + (r.windowEnd - r.windowStart) / 2
+                : r.spanStart + (r.spanEnd - r.spanStart) / 2;
+        SkyState referenceState = Ephemeris.compute(r.refTime, lat, lon);
+        r.illumPercent = referenceState.illumPercent();
+        r.waxing = referenceState.waxing;
+        r.phaseName = phaseName(referenceState.illumFraction, referenceState.waxing);
+
+        if (!r.hasWindow()) {
+            r.level = NightReport.LightLevel.NONE;
+            r.rating = NightReport.Rating.NONE;
+            return;
+        }
+
+        long step = r.sampleStep;
+        int total = 0, hll = 0, lowMoon = 0;
+        double peak = -1, peakMoon = -1, min = double.MaxValue, maxAlt = -91;
+        List<NightReport.HllPeriod> periods = new List<NightReport.HllPeriod>();
+        ShadowOutlook.Builder shadows = new ShadowOutlook.Builder();
+        long segStart = NightReport.NONE;
+        bool segMoon = false;
+        for (long t = r.windowStart; t < r.windowEnd; t += step) {
+            SkyState s = Ephemeris.compute(t, lat, lon);
+            bool visible = moonClearance(s, horizon) >= 0;
+            Lux l = lux(s, ps, horizon, visible);
+            double alt = effectiveMoonAlt(s, horizon, visible);
+            bool isHll = ps.standard.isHighLight(l.total, l.sun, alt, s.illumPercent());
+            // would it be HLL from the moon (and sky) alone, without twilight?
+            bool moonHll = ps.standard.isHighLight(l.total - l.sun, 0, alt,
+                    s.illumPercent());
+            bool moonUp = s.moonAltDeg - moonHorizon(s.moonParallaxDeg) >= 0;
+            ShadowOutlook.Kind kind = ShadowOutlook.classify(s.moonAltDeg, visible, moonUp,
+                    l.moon);
+            bool glare = kind == ShadowOutlook.Kind.LONG
+                    && s.moonAltDeg < ShadowOutlook.GLARE_BELOW_DEG;
+            shadows.add(t, kind, s.moonAzDeg, glare);
+            total++;
+            if (isHll) {
+                hll++;
+                if (r.firstHll == NightReport.NONE)
+                    r.firstHll = t;
+                r.lastHll = t;
+                if (segStart == NightReport.NONE) {
+                    segStart = t;
+                    segMoon = false;
+                }
+                segMoon |= moonHll;
+            } else if (segStart != NightReport.NONE) {
+                periods.Add(new NightReport.HllPeriod(segStart, t, !segMoon));
+                segStart = NightReport.NONE;
+            }
+            if (s.moonAltDeg > 0 && s.moonAltDeg < ps.standard.minMoonAltDeg)
+                lowMoon++;
+            if (l.total > peak) {
+                peak = l.total;
+                r.peakLuxTime = t;
+            }
+            if (l.moon > peakMoon) {
+                peakMoon = l.moon;
+                r.peakMoonLuxTime = t;
+            }
+            min = Math.Min(min, l.total);
+            if (s.moonAltDeg > maxAlt) {
+                maxAlt = s.moonAltDeg;
+                r.moonMaxAltTime = t;
+            }
+        }
+        if (segStart != NightReport.NONE)
+            periods.Add(new NightReport.HllPeriod(segStart, r.windowEnd, !segMoon));
+        r.hllPeriods = periods;
+        r.shadows = shadows.build(r.windowEnd);
+        if (total == 0) {
+            r.level = NightReport.LightLevel.NONE;
+            r.rating = NightReport.Rating.NONE;
+            return;
+        }
+        r.hllFraction = hll / (double) total;
+        r.lowMoonFraction = lowMoon / (double) total;
+        r.peakLux = peak;
+        r.peakMoonLux = peakMoon;
+        r.minLux = min;
+        r.moonMaxAltDeg = maxAlt;
+
+        if (r.hllFraction >= 1.0 - ps.tolerance)
+            r.level = NightReport.LightLevel.HLL;
+        else if (r.hllFraction <= ps.tolerance)
+            r.level = NightReport.LightLevel.LLL;
+        else
+            r.level = NightReport.LightLevel.MIXED;
+        r.rating = ratingFor(r.level, ps.mission);
+    }
+
+    internal static NightReport.Rating ratingFor(NightReport.LightLevel level, PlanSettings.Mission m) {
+        switch (level) {
+            case NightReport.LightLevel.HLL:
+                return m == PlanSettings.Mission.NVG ? NightReport.Rating.GREEN
+                        : NightReport.Rating.RED;
+            case NightReport.LightLevel.LLL:
+                return m == PlanSettings.Mission.NVG ? NightReport.Rating.RED
+                        : NightReport.Rating.GREEN;
+            case NightReport.LightLevel.MIXED:
+                return NightReport.Rating.AMBER;
+            default:
+                return NightReport.Rating.NONE;
+        }
+    }
+
+    internal static string phaseName(double fraction, bool waxing) {
+        if (fraction < 0.02)
+            return "New";
+        if (fraction > 0.98)
+            return "Full";
+        if (fraction >= 0.45 && fraction <= 0.55)
+            return waxing ? "First Quarter" : "Last Quarter";
+        if (fraction < 0.5)
+            return waxing ? "Waxing Crescent" : "Waning Crescent";
+        return waxing ? "Waxing Gibbous" : "Waning Gibbous";
+    }
+}
+
+}

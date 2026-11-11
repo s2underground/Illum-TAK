@@ -1,0 +1,43 @@
+Illum for WinTAK
+
+I ported the astronomy formulas from this repository's Java core. The references
+are Jean Meeus, Astronomical Algorithms, 2nd edition (1998), chapters 12, 22, 25,
+47 and 48, and USNO Circular 171, Janiczek and DeYoung (1987), for illuminance.
+The USNO circular is public domain.
+
+I reuse the repository's tzmap.bin, derived from timezone-boundary-builder
+release 2026e by Evan Siroky, using OpenStreetMap data.
+Copyright OpenStreetMap contributors.
+The derived database is available under the Open Database License 1.0:
+https://opendatacommons.org/licenses/odbl/1-0/
+Source and rebuild instructions: tools/tzmap/ in this repository.
+
+I include Noda Time 3.3.7 for offline IANA timezone rules on Windows.
+Copyright the Noda Time Authors, Apache License 2.0.
+https://github.com/nodatime/nodatime
+License: https://www.apache.org/licenses/LICENSE-2.0
+The complete license is in licenses/NodaTime-LICENSE.txt in the source tree,
+and NodaTime-LICENSE.txt in the WPK's plugin folder.
+Noda Time includes IANA Time Zone Database data: https://www.iana.org/time-zones
+
+WinTAK supplies System.Runtime.CompilerServices.Unsafe; I don't bundle a
+separate copy. I keep its copyright and license notice below.
+
+System.Runtime.CompilerServices.Unsafe, Copyright .NET Foundation and Contributors,
+MIT License. https://github.com/dotnet/runtime
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

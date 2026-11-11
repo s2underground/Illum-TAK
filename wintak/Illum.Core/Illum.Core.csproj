@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><AssemblyName>S2U.Illum.Core</AssemblyName><RootNamespace>Illum.Core</RootNamespace><Version>1.0.0</Version><AssemblyVersion>1.0.0.0</AssemblyVersion><FileVersion>1.0.0.0</FileVersion></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NodaTime" Version="3.3.7" />
+    <EmbeddedResource Include="../../app/src/main/assets/tzmap.bin" LogicalName="Illum.tzmap.bin" />
+  </ItemGroup>
+</Project>
