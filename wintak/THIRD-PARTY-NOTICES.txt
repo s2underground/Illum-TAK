@@ -1,20 +1,27 @@
 Illum for WinTAK
 
-Astronomy: Jean Meeus, Astronomical Algorithms, 2nd edition (1998),
-chapters 12, 22, 25, 47 and 48. Formulas ported from this repository's Java core.
-Illuminance: USNO Circular 171, Janiczek and DeYoung (1987), public domain.
+I ported the astronomy formulas from this repository's Java core. The references
+are Jean Meeus, Astronomical Algorithms, 2nd edition (1998), chapters 12, 22, 25,
+47 and 48, and USNO Circular 171, Janiczek and DeYoung (1987), for illuminance.
+The USNO circular is public domain.
 
-The embedded tzmap.bin is derived from timezone-boundary-builder release 2026e,
-by Evan Siroky, using OpenStreetMap data. Copyright OpenStreetMap contributors.
+I reuse the repository's tzmap.bin, derived from timezone-boundary-builder
+release 2026e by Evan Siroky, using OpenStreetMap data.
+Copyright OpenStreetMap contributors.
 The derived database is available under the Open Database License 1.0:
 https://opendatacommons.org/licenses/odbl/1-0/
 Source and rebuild instructions: tools/tzmap/ in this repository.
 
-Noda Time 3.3.7, Copyright the Noda Time Authors, Apache License 2.0.
+I include Noda Time 3.3.7 for offline IANA timezone rules on Windows.
+Copyright the Noda Time Authors, Apache License 2.0.
 https://github.com/nodatime/nodatime
 License: https://www.apache.org/licenses/LICENSE-2.0
-Includes IANA Time Zone Database data; https://www.iana.org/time-zones
-Noda Time's bundled TZDB enables offline IANA timezone rules on Windows.
+The complete license is in licenses/NodaTime-LICENSE.txt in the source tree,
+and NodaTime-LICENSE.txt in the WPK's plugin folder.
+Noda Time includes IANA Time Zone Database data: https://www.iana.org/time-zones
+
+WinTAK supplies System.Runtime.CompilerServices.Unsafe; I don't bundle a
+separate copy. I keep its copyright and license notice below.
 
 System.Runtime.CompilerServices.Unsafe, Copyright .NET Foundation and Contributors,
 MIT License. https://github.com/dotnet/runtime
